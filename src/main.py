@@ -5,7 +5,7 @@ import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QMainWindow
+from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QMainWindow, QPushButton
 from PyQt5 import uic
 
 
@@ -48,8 +48,8 @@ class RectanglePackingGUI(QWidget):
         super().__init__()
         self.problem = problem
         self.setWindowTitle("Rectangle Packing Visualization")
-        self.setGeometry(100, 100, self.problem._box_size, self.problem._box_size)
-        self.setStyleSheet("background-color: white;")
+        self.setGeometry(0, 0, self.problem._box_size, self.problem._box_size)
+        self.setStyleSheet("background-color: red;")
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -76,15 +76,21 @@ class MainWindow(QMainWindow):
         path = parent_dir + "/resources/main_window.ui"
         uic.loadUi(path, self)
 
-        # Visualize the rectangles using a custom widget
-        self.visualization_widget = RectanglePackingGUI(problem)
-        self.visualization_widget.setParent(self)
-        self.visualization_widget.move(0, 0)  # Position the widget inside the window
-
         self.setWindowTitle("Rectangle Packing Visualization")
+        # Visualize the rectangles using a custom widget
+        # self.visualization_widget = RectanglePackingGUI(problem)
+        # self.visualization_widget.setParent(self)
+        # self.visualization_widget.move(0, 0)  # Position the widget inside the window
+        self.init_field()
+        self.pb_box_length.clicked.connect(self.on_my_button_click)
         # self.setGeometry(100, 100, problem._box_size, problem._box_size)
 
+    def on_my_button_click(self):
+        print("Button clicked!")
 
+    def init_field(self) -> None:
+        self._pb_box_length: QPushButton = self.pb_box_length
+    
 # Test Environment (simplified)
 # class TestEnvironment:
 #     def run(self):
@@ -102,6 +108,7 @@ class MainWindow(QMainWindow):
 #         # gui = RectanglePackingGUI(problem, algorithm)
 #         # gui.visualize(solution)
 
+    
 
 class TestEnvironment:
     def run(self):
@@ -127,6 +134,6 @@ if __name__ == "__main__":
     # window.setWindowTitle("PyQt App")
     # window.setGeometry(100, 100, 280, 80)
     # helloMsg = QLabel("<h1>Hello, World!</h1>", parent=window)
-
+    
     test_env = TestEnvironment()
     test_env.run()
