@@ -1,29 +1,34 @@
-from src.main import OptimizationProblem
-from src.structs import *
+# from main import OptimizationProblem
+from structs import *
+import numpy as np
 
 # Greedy Algorithm
 class Greedy:
-    def __init__(self, problem: OptimizationProblem, strategy):
+    def __init__(self, problem, strategy):
         self.problem = problem
         self.strategy = strategy
+        self._boxes = [Box(self.problem.get_box_size())]
 
     def run(self):
         rectangles = self.problem.get_rectangles()
         sorted_rectangles = self.strategy.generate_order(rectangles)
-        boxes = [Box(self.problem.get_box_size())]
+        # boxes = [Box(self.problem.get_box_size())]
 
         # Apply the strategy to place rectangles
         for rectangle in sorted_rectangles:
-            self.place_rectangle(boxes, rectangle)
-        return boxes
+            self.place_rectangle(self._boxes, rectangle)
+        # return boxes
 
-    def place_rectangle(self, boxes, rectangle):
+    def place_rectangle(self, boxes: list[Box], rectangle):
         placed = False
         for box in boxes:
             placed = box.place(rectangle)
             if placed: break
         if not placed:
-            boxes.append(Box(self.problem.get_box_size()).place(rectangle))
+            # boxes.append(Box(self.problem.get_box_size()).place(rectangle))
+            box = Box(self.problem.get_box_size())
+            box.place(rectangle)
+            self._boxes.append(box)
 
 
 # Strategy Implementations for Greedy; 1 by area, 2 by perimeter

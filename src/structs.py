@@ -5,26 +5,29 @@ class Box:
         self._coordinates = [(0, 0)]
         self._space = box_size * box_size
 
-    def can_place(self,rectangle, x, y):
+    def can_place(self, rectangle: "Rectangle", x, y):
         if x + rectangle.width > self._length or y + rectangle.height > self._length:
             return False
         overlap = self.compute_overlap(rectangle, x, y)
-        if overlap>0:
+        if overlap > 0:
             return False
         return True
 
-    def compute_overlap(self, rectangle, x, y):
+    def compute_overlap(self, rectangle: "Rectangle", x, y):
         total_overlap = 0
         for placed in self._rectangles:
-            overlap_width = max(0, min(placed.x + placed.width, x + rectangle.width)
-                                - max(placed.x, x))
-            overlap_height = max(0, min(placed.y + placed.height, y + rectangle.height)
-                                 - max(placed.y, y))
+            overlap_width = max(
+                0, min(placed.x + placed.width, x + rectangle.width) - max(placed.x, x)
+            )
+            overlap_height = max(
+                0,
+                min(placed.y + placed.height, y + rectangle.height) - max(placed.y, y),
+            )
             total_overlap += overlap_width * overlap_height
         return total_overlap
 
-    def place(self, rectangle):
-        if rectangle.width * rectangle.height >self._space:
+    def place(self, rectangle: "Rectangle"):
+        if rectangle.width * rectangle.height > self._space:
             return False
         for coordinate in self._coordinates:
             x, y = coordinate
@@ -49,7 +52,6 @@ class Box:
 
     def get_rectangles(self):
         return self._rectangles
-
 
 
 class Rectangle:
