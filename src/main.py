@@ -129,37 +129,38 @@ class ApplyWindow(QWidget):
         num_boxes = len(boxes)
 
         # Arrange boxes dynamically
-        cols = int(
-            np.ceil(np.sqrt(num_boxes))
-        )  # Grid layout: square root approximation
-        rows = int(np.ceil(num_boxes / cols))
-
+        # cols = int(
+        #     np.ceil(np.sqrt(num_boxes))
+        # )  # Grid layout: square root approximation
+        # rows = int(np.ceil(num_boxes / cols))
+        cols = num_boxes
         box_width = widget_width // cols
-        box_height = widget_height // rows
+        # box_height = widget_height // rows
 
         for i, box in enumerate(boxes):
             col = i % cols
             row = i // cols
-            x_offset = col * box_width
-            y_offset = row * box_height
-
+            x_offset = i * box_width 
+            # y_offset = row * box_height
+            
             # Draw box boundary
-            painter.setBrush(Qt.white)
-            painter.drawRect(x_offset, y_offset, box_width, box_height)
+            color = QColor(255, 255, 255) if i % 2 == 0 else QColor(200, 200, 200)
+            painter.setBrush(color)
+            painter.drawRect(x_offset, 0, box_width, widget_height)
 
-            for rect in box.get_rectangles():
-                scaled_x = x_offset + int(rect.x * (box_width / box_size))
-                scaled_y = y_offset + int(rect.y * (box_height / box_size))
-                scaled_width = int(rect.width * (box_width / box_size))
-                scaled_height = int(rect.height * (box_height / box_size))
+            # for rect in box.get_rectangles():
+            #     scaled_x = x_offset + int(rect.x * (box_width / box_size))
+            #     scaled_y = y_offset + int(rect.y * (box_height / box_size))
+            #     scaled_width = int(rect.width * (box_width / box_size))
+            #     scaled_height = int(rect.height * (box_height / box_size))
 
-                color = QColor(
-                    np.random.randint(256),
-                    np.random.randint(256),
-                    np.random.randint(256),
-                )
-                painter.setBrush(color)
-                painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
+            #     color = QColor(
+            #         np.random.randint(256),
+            #         np.random.randint(256),
+            #         np.random.randint(256),
+            #     )
+            #     painter.setBrush(color)
+            #     painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
 
 
 class MainWindow(QMainWindow):
@@ -229,7 +230,7 @@ class TestEnvironment:
     def run(self):
         # Define the box size, number of rectangles, and the problem instance
         optimization_problem = OptimizationProblem(
-            box_size=500, num_rectangles=10, min_size=50, max_size=100
+            box_size=500, num_rectangles=30, min_size=20, max_size=40
         )
 
         # Create the application window

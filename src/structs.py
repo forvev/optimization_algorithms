@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class Box:
     def __init__(self, box_size):
         self._length = box_size
@@ -34,7 +36,13 @@ class Box:
             if self.can_place(rectangle, x, y):
                 self._update_placement(rectangle, coordinate)
                 return True
-            elif self.can_place(rectangle.rotate(), x, y):
+            else: #rotation
+                rectangle_rotate = deepcopy(rectangle)
+                rectangle_rotate.rotate()
+                if self.can_place(rectangle_rotate, x, y):
+                    rectangle.rotate()
+                    self._update_placement(rectangle, coordinate)
+                    return True
                 self._update_placement(rectangle, coordinate)
                 return True
         return False

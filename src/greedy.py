@@ -16,12 +16,12 @@ class Greedy:
 
         # Apply the strategy to place rectangles
         for rectangle in sorted_rectangles:
-            self.place_rectangle(self._boxes, rectangle)
+            self.place_rectangle(rectangle)
         # return boxes
 
-    def place_rectangle(self, boxes: list[Box], rectangle):
+    def place_rectangle(self, rectangle):
         placed = False
-        for box in boxes:
+        for box in self._boxes:
             placed = box.place(rectangle)
             if placed: break
         if not placed:
@@ -29,7 +29,6 @@ class Greedy:
             box = Box(self.problem.get_box_size())
             box.place(rectangle)
             self._boxes.append(box)
-
 
 # Strategy Implementations for Greedy; 1 by area, 2 by perimeter
 class GreedyArea:
