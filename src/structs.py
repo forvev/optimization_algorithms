@@ -44,6 +44,9 @@ class Box:
         self._coordinates.append((x, y + rectangle.height))
         self._space -= rectangle.width * rectangle.height
 
+    def place_no_check(self, rectangle):
+        self._rectangles.append(rectangle)
+
     def get_rectangles(self):
         return self._rectangles
 
@@ -57,5 +60,4 @@ class Rectangle:
         self.y = y
 
     def rotate(self):
-        self.width = self.height
-        self.height = self.width
+        self.width, self.height = self.height, self.width

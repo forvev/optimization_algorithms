@@ -26,13 +26,11 @@ class Greedy:
             boxes.append(Box(self.problem.get_box_size()).place(rectangle))
 
 
-# Strategy Implementations for Greedy
+# Strategy Implementations for Greedy; 1 by area, 2 by perimeter
 class GreedyArea:
     def generate_order(self, solution):
-        # Generate order based on a simple greedy approach (e.g., largest first)
         return sorted(solution, key=lambda x: x.width * x.height, reverse=True)
 
 class GreedyPerimeter:
     def generate_order(self, solution):
-        # Use a more advanced greedy strategy
         return sorted(solution, key=lambda x: x.width + x.height, reverse=True)
