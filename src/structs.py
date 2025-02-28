@@ -1,15 +1,12 @@
-from dask.array.overlap import overlap
-
-
-class box:
+class Box:
     def __init__(self, box_size):
-        self.length = box_size
-        self.rectangles = []
-        self.coordinates = [(0,0)]
-        self.space = box_size*box_size
+        self._length = box_size
+        self._rectangles = []
+        self._coordinates = [(0, 0)]
+        self._space = box_size * box_size
 
     def can_place(self,rectangle, x, y):
-        if x + rectangle.width > self.length or y + rectangle.height > self.length:
+        if x + rectangle.width > self._length or y + rectangle.height > self._length:
             return False
         overlap = self.compute_overlap(rectangle, x, y)
         if overlap>0:
@@ -18,7 +15,7 @@ class box:
 
     def compute_overlap(self, rectangle, x, y):
         total_overlap = 0
-        for placed in self.rectangles:
+        for placed in self._rectangles:
             overlap_width = max(0, min(placed.x + placed.width, x + rectangle.width)
                                 - max(placed.x, x))
             overlap_height = max(0, min(placed.y + placed.height, y + rectangle.height)
@@ -27,29 +24,32 @@ class box:
         return total_overlap
 
     def place(self, rectangle):
-        if rectangle.width * rectangle.height >self.space:
+        if rectangle.width * rectangle.height >self._space:
             return False
-        for coordinate in self.coordinates:
+        for coordinate in self._coordinates:
             x, y = coordinate
             if self.can_place(rectangle, x, y):
-                self.rectangles.append(rectangle)
-                self.coordinates.remove(coordinate)
-                self.coordinates.append((x + rectangle.width,y))
-                self.coordinates.append((x, y + rectangle.height))
-                self.space -= rectangle.width * rectangle.height
+                self._update_placement(rectangle, coordinate)
                 return True
             elif self.can_place(rectangle.rotate(), x, y):
-                self.rectangles.append(rectangle)
-                self.coordinates.remove(coordinate)
-                self.coordinates.append((x + rectangle.width, y))
-                self.coordinates.append((x, y + rectangle.height))
-                self.space -= rectangle.width * rectangle.height
+                self._update_placement(rectangle, coordinate)
                 return True
         return False
 
+    def _update_placement(self, rectangle, coordinate):
+        x, y = coordinate
+        self._rectangles.append(rectangle)
+        self._coordinates.remove(coordinate)
+        self._coordinates.append((x + rectangle.width, y))
+        self._coordinates.append((x, y + rectangle.height))
+        self._space -= rectangle.width * rectangle.height
+
+    def get_rectangles(self):
+        return self._rectangles
 
 
-class rectangle:
+
+class Rectangle:
     def __init__(self, width, height, x, y):
         self.width = width
         self.height = height

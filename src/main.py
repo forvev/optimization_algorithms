@@ -39,6 +39,9 @@ class OptimizationProblem:
     def get_rectangles(self):
         return self._rectangles
 
+    def get_box_size(self):
+        return self._box_size
+
     def apply_algorithm(self, algorithm):
         raise NotImplementedError()
 
