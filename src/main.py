@@ -3,6 +3,7 @@ from greedy import *
 import numpy as np
 import sys
 import os
+import time
 
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtWidgets import (
@@ -11,12 +12,12 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
     QRadioButton,
+    QTextEdit,
 )
 from PyQt5 import uic
 
 
 class OptimizationProblem:
-
     def __init__(
         self, box_size: int, num_rectangles: int, min_size: int, max_size: int
     ) -> None:
@@ -69,14 +70,26 @@ class ApplyWindow(QWidget):
 
         self.setWindowTitle("Apply Algorithm")
 
+        start_time = time.time()
+
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
             self._algorithm.run()
+        elif isinstance(strategy, GeometryBasedNeighborhood) or isinstance(
+            strategy, RuleBasedNeighborhood) or isinstance(strategy, PartialOverlapNeighborhood):
+            self._algorithm = LocalSearch(problem, strategy)
+            self._algorithm.run()
+        
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"Algorithm execution time: {execution_time:.4f} seconds")
 
         rows = (len(self._algorithm._boxes) // 10) + (
             1 if len(self._algorithm._boxes) % 10 > 0 else 0
         )
-        self.setFixedSize(1000, rows*100) # todo: it should depend on the box length
+
+        # 10 columns, rows based on the number of boxes
+        self.setFixedSize(self._problem._box_size*10, rows*self._problem._box_size)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -97,6 +110,7 @@ class ApplyWindow(QWidget):
         )
         box_width = widget_width // boxes_per_row
 
+        # todo: add lines between boxes
         for row in range(rows):
             for col in range(boxes_per_row):
                 box_index = row * boxes_per_row + col
@@ -156,9 +170,29 @@ class MainWindow(QMainWindow):
         self._rb_greedy_2.clicked.connect(self._on_rb_greedy_2_clicked)
 
     def _open_apply_window(self):
-        """Opens the apply window."""
-        if self._apply_window is None:
-            self._apply_window = ApplyWindow(self._problem, self._strategy)
+        """Opens the apply window with the selected strategy and problem"""
+
+        if not self._rb_greedy_1.isChecked() and not self._rb_greedy_2.isChecked() and \
+            not self._rb_neighborhood_1.isChecked() and not self._rb_neighborhood_2.isChecked() and \
+            not self._rb_neighborhood_3.isChecked():
+            print("Please select a strategy")
+            return
+
+        if self._box_size_value.text().isdigit() and \
+            self._num_of_rect_value.text().isdigit() and \
+            self._min_size_value.text().isdigit() and \
+            self._max_size_value.text().isdigit():
+
+            print("Creating new problem instance")
+            self._problem = OptimizationProblem(
+                int(self._box_size_value.text()),
+                int(self._num_of_rect_value.text()),
+                int(self._min_size_value.text()),
+                int(self._max_size_value.text()),
+            )
+
+        # create the apply window every time the apply button is clicked
+        self._apply_window = ApplyWindow(self._problem, self._strategy)
         self._apply_window.show()
 
     def _on_rb_greedy_1_clicked(
@@ -171,11 +205,27 @@ class MainWindow(QMainWindow):
     ) -> None:
         self._strategy = GreedyPerimeter()
 
+    def _on_rb_neighborhood_1_clicked(self) -> None:
+        self._strategy = GeometryBasedNeighborhood()
+
+    def _on_rb_neighborhood_2_clicked(self) -> None:
+        self._strategy = RuleBasedNeighborhood()
+
+    def _on_rb_neighborhood_3_clicked(self) -> None:
+        self._strategy = PartialOverlapNeighborhood()
+
     def init_field(self) -> None:
-        # self._pb_box_length: QPushButton = self.pb_box_length
+        """Initializes the fields of the main window (because it helps with the suggestions)"""
         self._pb_apply: QPushButton = self.pb_apply
         self._rb_greedy_1: QRadioButton = self.rb_greedy_1
         self._rb_greedy_2: QRadioButton = self.rb_greedy_2
+        self._rb_neighborhood_1: QRadioButton = self.rb_neighborhood_1
+        self._rb_neighborhood_2: QRadioButton = self.rb_neighborhood_2
+        self._rb_neighborhood_3: QRadioButton = self.rb_neighborhood_3
+        self._num_of_rect_value: QTextEdit = self.num_of_rect_value
+        self._box_size_value: QTextEdit = self.box_size_value
+        self._min_size_value: QTextEdit = self.min_size_value
+        self._max_size_value: QTextEdit = self.max_size_value
         self._apply_window: QWidget = None
 
 
