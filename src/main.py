@@ -62,8 +62,6 @@ class ApplyWindow(QWidget):
         self._problem = problem
         self._algorithm = None
 
-        self.setFixedSize(1200, 1200)
-
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
         path = parent_dir + "/resources/algorithm_widget.ui"
@@ -74,6 +72,11 @@ class ApplyWindow(QWidget):
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
             self._algorithm.run()
+
+        rows = (len(self._algorithm._boxes) // 10) + (
+            1 if len(self._algorithm._boxes) % 10 > 0 else 0
+        )
+        self.setFixedSize(1000, rows*100) # todo: it should depend on the box length
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -88,33 +91,52 @@ class ApplyWindow(QWidget):
         if num_boxes == 0:
             return
 
-        cols = num_boxes
-        box_width = widget_width // cols
+        boxes_per_row = 10
+        rows = (num_boxes // boxes_per_row) + (
+            1 if num_boxes % boxes_per_row > 0 else 0
+        )
+        box_width = widget_width // boxes_per_row
 
-        for i, box in enumerate(boxes):
-            x_offset = i * box_width
+        for row in range(rows):
+            for col in range(boxes_per_row):
+                box_index = row * boxes_per_row + col
+                if box_index >= num_boxes:
+                    break  # Skip if we don't have enough boxes for this position
 
-            # Draw box boundary
-            color = QColor(255, 255, 255) if i % 2 == 0 else QColor(200, 200, 200)
-            painter.setBrush(color)
-            painter.drawRect(x_offset, 0, box_width, widget_height)
+                box = boxes[box_index]
 
-            scale_factor = min(box_width / box_size, widget_height / box_size)
+                # Calculate x and y offsets for each box
+                x_offset = col * box_width
+                y_offset = row * (widget_height // rows)
 
-            for rect in box.get_rectangles():
-                # Scale positions and dimensions
-                scaled_x = x_offset + int(rect.x * scale_factor)
-                scaled_y = int(rect.y * scale_factor)
-                scaled_width = int(rect.width * scale_factor)
-                scaled_height = int(rect.height * scale_factor)
-
-                color = QColor(
-                    np.random.randint(256),
-                    np.random.randint(256),
-                    np.random.randint(256),
+                # Draw box boundary
+                color = (
+                    QColor(255, 255, 255)
+                    if (row + col) % 2 == 0
+                    else QColor(200, 200, 200)
                 )
                 painter.setBrush(color)
-                painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
+                painter.drawRect(x_offset, y_offset, box_width, widget_height // rows)
+
+                scale_factor = min(
+                    box_width / box_size, (widget_height // rows) / box_size
+                )
+
+                for rect in box.get_rectangles():
+                    # Scale positions and dimensions
+                    scaled_x = x_offset + int(rect.x * scale_factor)
+                    scaled_y = y_offset + int(rect.y * scale_factor)
+                    scaled_width = int(rect.width * scale_factor)
+                    scaled_height = int(rect.height * scale_factor)
+
+                    color = QColor(
+                        np.random.randint(256),
+                        np.random.randint(256),
+                        np.random.randint(256),
+                    )
+                    painter.setBrush(color)
+                    painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
+
 
 class MainWindow(QMainWindow):
     def __init__(self, problem: OptimizationProblem):
@@ -156,11 +178,12 @@ class MainWindow(QMainWindow):
         self._rb_greedy_2: QRadioButton = self.rb_greedy_2
         self._apply_window: QWidget = None
 
+
 class TestEnvironment:
     def run(self):
         # Define the box size, number of rectangles, and the problem instance
         optimization_problem = OptimizationProblem(
-            box_size=100, num_rectangles=200, min_size=20, max_size=40
+            box_size=100, num_rectangles=800, min_size=1, max_size=40
         )
 
         # Create the application window
