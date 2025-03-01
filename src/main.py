@@ -4,11 +4,9 @@ import numpy as np
 import sys
 import os
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtWidgets import (
     QApplication,
-    QLabel,
     QWidget,
     QMainWindow,
     QPushButton,
@@ -64,7 +62,7 @@ class ApplyWindow(QWidget):
         self._problem = problem
         self._algorithm = None
 
-        self.setFixedSize(500, 500)
+        self.setFixedSize(1200, 1200)
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
@@ -76,7 +74,7 @@ class ApplyWindow(QWidget):
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
             self._algorithm.run()
-    
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -89,14 +87,13 @@ class ApplyWindow(QWidget):
 
         if num_boxes == 0:
             return
-    
+
         cols = num_boxes
         box_width = widget_width // cols
 
         for i, box in enumerate(boxes):
-            x_offset = i * box_width 
-            y_offset = 0
-            
+            x_offset = i * box_width
+
             # Draw box boundary
             color = QColor(255, 255, 255) if i % 2 == 0 else QColor(200, 200, 200)
             painter.setBrush(color)
@@ -104,11 +101,10 @@ class ApplyWindow(QWidget):
 
             scale_factor = min(box_width / box_size, widget_height / box_size)
 
-            for rect, (rect_x, rect_y) in zip(box.get_rectangles(), box._coordinates):
+            for rect in box.get_rectangles():
                 # Scale positions and dimensions
-                print(box._coordinates)
-                scaled_x = x_offset + int(rect_x * scale_factor)
-                scaled_y = int(rect_y * scale_factor)
+                scaled_x = x_offset + int(rect.x * scale_factor)
+                scaled_y = int(rect.y * scale_factor)
                 scaled_width = int(rect.width * scale_factor)
                 scaled_height = int(rect.height * scale_factor)
 
@@ -160,30 +156,11 @@ class MainWindow(QMainWindow):
         self._rb_greedy_2: QRadioButton = self.rb_greedy_2
         self._apply_window: QWidget = None
 
-
-# Test Environment (simplified)
-# class TestEnvironment:
-#     def run(self):
-#         # Define the box size, number of rectangles, and the problem instance
-#         optimization_problem = OptimizationProblem(box_size=100, num_rectangles=10, min_size=10, max_size=20)
-
-#         # Select neighborhood and algorithm
-#         neighborhood = GeometryBasedNeighborhood()
-#         algorithm = LocalSearch(optimization_problem, neighborhood)
-
-#         # Run the algorithm
-#         # solution = algorithm.run()
-
-#         # Visualize the result
-#         # gui = RectanglePackingGUI(problem, algorithm)
-#         # gui.visualize(solution)
-
-
 class TestEnvironment:
     def run(self):
         # Define the box size, number of rectangles, and the problem instance
         optimization_problem = OptimizationProblem(
-            box_size=100, num_rectangles=100, min_size=20, max_size=40
+            box_size=100, num_rectangles=200, min_size=20, max_size=40
         )
 
         # Create the application window

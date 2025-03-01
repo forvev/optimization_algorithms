@@ -68,8 +68,8 @@ class Box:
                     rectangle.rotate()
                     self._update_placement(rectangle, coordinate)
                     return True
-                self._update_placement(rectangle, coordinate)
-                return True
+                # self._update_placement(rectangle, coordinate)
+                # return True
         return False
 
     def _update_placement(self, rectangle, coordinate) -> None:
@@ -80,6 +80,9 @@ class Box:
             coordinate (Tuple[int, int]): the coordinate to place the rectangle
         """
         x, y = coordinate
+
+        rectangle.x = x
+        rectangle.y = y
         self._rectangles.append(rectangle)
         self._coordinates.remove(coordinate)
         self._coordinates.append((x + rectangle.width, y))
