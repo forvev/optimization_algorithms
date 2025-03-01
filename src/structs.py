@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class Box:
     def __init__(self, box_size):
         self._length = box_size
@@ -5,39 +7,82 @@ class Box:
         self._coordinates = [(0, 0)]
         self._space = box_size * box_size
 
-    def can_place(self,rectangle, x, y):
+    def can_place(self, rectangle: "Rectangle", x, y) -> bool:
+        """
+        Check if a rectangle can be placed at a given coordinate
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            x (int): x coordinate
+            y (int): y coordinate
+        Returns:
+            bool: True if the rectangle can be placed, False otherwise
+        """
         if x + rectangle.width > self._length or y + rectangle.height > self._length:
             return False
         overlap = self.compute_overlap(rectangle, x, y)
-        if overlap>0:
+        if overlap > 0:
             return False
         return True
 
-    def compute_overlap(self, rectangle, x, y):
+    def compute_overlap(self, rectangle: "Rectangle", x, y) -> int:
+        """
+        Compute the overlap of a rectangle with the rectangles already placed in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            x (int): x coordinate
+            y (int): y coordinate
+        Returns:
+            int: the total overlap area
+        """
         total_overlap = 0
         for placed in self._rectangles:
-            overlap_width = max(0, min(placed.x + placed.width, x + rectangle.width)
-                                - max(placed.x, x))
-            overlap_height = max(0, min(placed.y + placed.height, y + rectangle.height)
-                                 - max(placed.y, y))
+            overlap_width = max(
+                0, min(placed.x + placed.width, x + rectangle.width) - max(placed.x, x)
+            )
+            overlap_height = max(
+                0,
+                min(placed.y + placed.height, y + rectangle.height) - max(placed.y, y),
+            )
             total_overlap += overlap_width * overlap_height
         return total_overlap
 
-    def place(self, rectangle):
-        if rectangle.width * rectangle.height >self._space:
+    def place(self, rectangle: "Rectangle") -> bool:
+        """
+        Place a rectangle in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+        Returns:
+            bool: True if the rectangle was placed, False otherwise
+        """
+        if rectangle.width * rectangle.height > self._space:
             return False
         for coordinate in self._coordinates:
             x, y = coordinate
             if self.can_place(rectangle, x, y):
                 self._update_placement(rectangle, coordinate)
                 return True
-            elif self.can_place(rectangle.rotate(), x, y):
-                self._update_placement(rectangle, coordinate)
-                return True
+            else: #rotation if can't place
+                rectangle_rotate = deepcopy(rectangle)
+                rectangle_rotate.rotate()
+                if self.can_place(rectangle_rotate, x, y):
+                    rectangle.rotate()
+                    self._update_placement(rectangle, coordinate)
+                    return True
+                # self._update_placement(rectangle, coordinate)
+                # return True
         return False
 
-    def _update_placement(self, rectangle, coordinate):
+    def _update_placement(self, rectangle, coordinate) -> None:
+        """
+        Update the placement of a rectangle in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            coordinate (Tuple[int, int]): the coordinate to place the rectangle
+        """
         x, y = coordinate
+
+        rectangle.x = x
+        rectangle.y = y
         self._rectangles.append(rectangle)
         self._coordinates.remove(coordinate)
         self._coordinates.append((x + rectangle.width, y))
@@ -49,7 +94,6 @@ class Box:
 
     def get_rectangles(self):
         return self._rectangles
-
 
 
 class Rectangle:

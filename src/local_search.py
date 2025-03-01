@@ -1,6 +1,6 @@
 from main import OptimizationProblem
-from src.structs import *
-from src.greedy import *
+from structs import *
+from greedy import *
 
 # Local Search Algorithm
 class LocalSearch:

@@ -1,11 +1,17 @@
 from local_search import *
+from greedy import *
 import numpy as np
 import sys
 import os
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QMainWindow, QPushButton
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QMainWindow,
+    QPushButton,
+    QRadioButton,
+)
 from PyQt5 import uic
 
 
@@ -19,60 +25,102 @@ class OptimizationProblem:
         self._min_size = min_size
         self._max_size = max_size
         self._rectangles = np.array([])
-
         self.generate_instance()
 
-    def generate_instance(
-        self,
-    ) -> None:
+    def generate_instance(self) -> None:
         rectangles = []
-        for i in range(self._num_rectangles):
+        for _ in range(self._num_rectangles):
             width = np.random.randint(self._min_size, self._max_size)
             height = np.random.randint(self._min_size, self._max_size)
-            x = np.random.randint(0, self._box_size - width)
-            y = np.random.randint(0, self._box_size - height)
+            rect = Rectangle(width, height, 0, 0)
 
-            rectangles.append([width, height, x, y])
+            rectangles.append(rect)
 
         self._rectangles = np.array(rectangles)
+
+    def move_rectangle(self, rect, source_box, target_box):
+        if target_box.place(rect):
+            source_box._rectangles.remove(rect)
+        else:
+            new_box = Box(self._box_size)
+            new_box.place(rect)
+            self._boxes.append(new_box)
 
     def get_rectangles(self):
         return self._rectangles
 
-    def get_box_size(self):
+    def get_box_size(self) -> int:
         return self._box_size
 
     def apply_algorithm(self, algorithm):
         raise NotImplementedError()
 
 
-class RectanglePackingGUI(QWidget):
-    def __init__(self, problem: OptimizationProblem):
+class ApplyWindow(QWidget):
+    def __init__(self, problem: OptimizationProblem, strategy):
         super().__init__()
-        self.problem = problem
-        self.setWindowTitle("Rectangle Packing Visualization")
-        self.setGeometry(0, 0, self.problem._box_size, self.problem._box_size)
-        self.setStyleSheet("background-color: red;")
+        self._problem = problem
+        self._algorithm = None
+
+        self.setFixedSize(1200, 1200)
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        path = parent_dir + "/resources/algorithm_widget.ui"
+        uic.loadUi(path, self)
+
+        self.setWindowTitle("Apply Algorithm")
+
+        if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
+            self._algorithm = Greedy(problem, strategy)
+            self._algorithm.run()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        rectangles = self.problem.get_rectangles()
-        for rectangle in rectangles:
-            width, height, x, y = rectangle
+        widget_width = self.width()
+        widget_height = self.height()
+        box_size = self._problem._box_size
+        boxes = self._algorithm._boxes
+        num_boxes = len(boxes)
 
-            color = QColor(
-                np.random.randint(256), np.random.randint(256), np.random.randint(256)
-            )
+        if num_boxes == 0:
+            return
+
+        cols = num_boxes
+        box_width = widget_width // cols
+
+        for i, box in enumerate(boxes):
+            x_offset = i * box_width
+
+            # Draw box boundary
+            color = QColor(255, 255, 255) if i % 2 == 0 else QColor(200, 200, 200)
             painter.setBrush(color)
-            painter.drawRect(x, y, width, height)
+            painter.drawRect(x_offset, 0, box_width, widget_height)
 
+            scale_factor = min(box_width / box_size, widget_height / box_size)
+
+            for rect in box.get_rectangles():
+                # Scale positions and dimensions
+                scaled_x = x_offset + int(rect.x * scale_factor)
+                scaled_y = int(rect.y * scale_factor)
+                scaled_width = int(rect.width * scale_factor)
+                scaled_height = int(rect.height * scale_factor)
+
+                color = QColor(
+                    np.random.randint(256),
+                    np.random.randint(256),
+                    np.random.randint(256),
+                )
+                painter.setBrush(color)
+                painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
 
 class MainWindow(QMainWindow):
     def __init__(self, problem: OptimizationProblem):
         super().__init__()
-
+        self._problem = problem
+        self._strategy = None
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
 
@@ -80,44 +128,39 @@ class MainWindow(QMainWindow):
         uic.loadUi(path, self)
 
         self.setWindowTitle("Rectangle Packing Visualization")
-        # Visualize the rectangles using a custom widget
-        # self.visualization_widget = RectanglePackingGUI(problem)
-        # self.visualization_widget.setParent(self)
-        # self.visualization_widget.move(0, 0)  # Position the widget inside the window
         self.init_field()
-        self.pb_box_length.clicked.connect(self.on_my_button_click)
-        # self.setGeometry(100, 100, problem._box_size, problem._box_size)
+        self._pb_apply.clicked.connect(self._open_apply_window)
+        self._rb_greedy_1.clicked.connect(self._on_rb_greedy_1_clicked)
+        self._rb_greedy_2.clicked.connect(self._on_rb_greedy_2_clicked)
 
-    def on_my_button_click(self):
-        print("Button clicked!")
+    def _open_apply_window(self):
+        """Opens the apply window."""
+        if self._apply_window is None:
+            self._apply_window = ApplyWindow(self._problem, self._strategy)
+        self._apply_window.show()
+
+    def _on_rb_greedy_1_clicked(
+        self,
+    ) -> None:
+        self._strategy = GreedyArea()
+
+    def _on_rb_greedy_2_clicked(
+        self,
+    ) -> None:
+        self._strategy = GreedyPerimeter()
 
     def init_field(self) -> None:
-        self._pb_box_length: QPushButton = self.pb_box_length
-    
-# Test Environment (simplified)
-# class TestEnvironment:
-#     def run(self):
-#         # Define the box size, number of rectangles, and the problem instance
-#         optimization_problem = OptimizationProblem(box_size=100, num_rectangles=10, min_size=10, max_size=20)
-
-#         # Select neighborhood and algorithm
-#         neighborhood = GeometryBasedNeighborhood()
-#         algorithm = LocalSearch(optimization_problem, neighborhood)
-
-#         # Run the algorithm
-#         # solution = algorithm.run()
-
-#         # Visualize the result
-#         # gui = RectanglePackingGUI(problem, algorithm)
-#         # gui.visualize(solution)
-
-    
+        # self._pb_box_length: QPushButton = self.pb_box_length
+        self._pb_apply: QPushButton = self.pb_apply
+        self._rb_greedy_1: QRadioButton = self.rb_greedy_1
+        self._rb_greedy_2: QRadioButton = self.rb_greedy_2
+        self._apply_window: QWidget = None
 
 class TestEnvironment:
     def run(self):
         # Define the box size, number of rectangles, and the problem instance
         optimization_problem = OptimizationProblem(
-            box_size=500, num_rectangles=10, min_size=10, max_size=100
+            box_size=100, num_rectangles=200, min_size=20, max_size=40
         )
 
         # Create the application window
@@ -132,11 +175,5 @@ class TestEnvironment:
 
 
 if __name__ == "__main__":
-    # app = QApplication([])
-    # window = QWidget()
-    # window.setWindowTitle("PyQt App")
-    # window.setGeometry(100, 100, 280, 80)
-    # helloMsg = QLabel("<h1>Hello, World!</h1>", parent=window)
-    
     test_env = TestEnvironment()
     test_env.run()

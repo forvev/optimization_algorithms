@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>408</width>
+    <height>418</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,10 @@
    <widget class="QWidget" name="verticalLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>240</x>
-      <y>40</y>
-      <width>391</width>
-      <height>431</height>
+      <x>0</x>
+      <y>0</y>
+      <width>401</width>
+      <height>371</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -85,37 +85,37 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QPushButton" name="pushButton_2">
+          <widget class="QRadioButton" name="rb_greedy_1">
            <property name="text">
-            <string>greedy_1</string>
+            <string>Greedy 1</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_5">
+          <widget class="QRadioButton" name="rb_greedy_2">
            <property name="text">
-            <string>local search 2</string>
+            <string>Greedy 2</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_4">
+          <widget class="QRadioButton" name="radioButton_3">
            <property name="text">
-            <string>local search 1</string>
+            <string>Local search 1</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_3">
+          <widget class="QRadioButton" name="radioButton_4">
            <property name="text">
-            <string>greedy_2</string>
+            <string>Local search 2</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_6">
+          <widget class="QRadioButton" name="radioButton_5">
            <property name="text">
-            <string>local search 3</string>
+            <string>Local search 3</string>
            </property>
           </widget>
          </item>
@@ -133,7 +133,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_10">
+        <widget class="QPushButton" name="pb_apply">
          <property name="text">
           <string>Apply</string>
          </property>
@@ -149,7 +149,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>408</width>
      <height>22</height>
     </rect>
    </property>
