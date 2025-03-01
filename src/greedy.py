@@ -32,9 +32,15 @@ class Greedy:
 
 # Strategy Implementations for Greedy; 1 by area, 2 by perimeter
 class GreedyArea:
+    """
+    Greedy strategy to sort the rectangles by area. The rectangles are sorted in decreasing order of area.
+    """
     def generate_order(self, solution):
         return sorted(solution, key=lambda x: x.width * x.height, reverse=True)
 
 class GreedyPerimeter:
+    """
+    Greedy strategy to sort the rectangles by perimeter. The rectangles are sorted in decreasing order of perimeter.
+    """
     def generate_order(self, solution):
         return sorted(solution, key=lambda x: x.width + x.height, reverse=True)

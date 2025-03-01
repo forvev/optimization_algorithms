@@ -7,7 +7,16 @@ class Box:
         self._coordinates = [(0, 0)]
         self._space = box_size * box_size
 
-    def can_place(self, rectangle: "Rectangle", x, y):
+    def can_place(self, rectangle: "Rectangle", x, y) -> bool:
+        """
+        Check if a rectangle can be placed at a given coordinate
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            x (int): x coordinate
+            y (int): y coordinate
+        Returns:
+            bool: True if the rectangle can be placed, False otherwise
+        """
         if x + rectangle.width > self._length or y + rectangle.height > self._length:
             return False
         overlap = self.compute_overlap(rectangle, x, y)
@@ -15,7 +24,16 @@ class Box:
             return False
         return True
 
-    def compute_overlap(self, rectangle: "Rectangle", x, y):
+    def compute_overlap(self, rectangle: "Rectangle", x, y) -> int:
+        """
+        Compute the overlap of a rectangle with the rectangles already placed in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            x (int): x coordinate
+            y (int): y coordinate
+        Returns:
+            int: the total overlap area
+        """
         total_overlap = 0
         for placed in self._rectangles:
             overlap_width = max(
@@ -28,7 +46,14 @@ class Box:
             total_overlap += overlap_width * overlap_height
         return total_overlap
 
-    def place(self, rectangle: "Rectangle"):
+    def place(self, rectangle: "Rectangle") -> bool:
+        """
+        Place a rectangle in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+        Returns:
+            bool: True if the rectangle was placed, False otherwise
+        """
         if rectangle.width * rectangle.height > self._space:
             return False
         for coordinate in self._coordinates:
@@ -36,7 +61,7 @@ class Box:
             if self.can_place(rectangle, x, y):
                 self._update_placement(rectangle, coordinate)
                 return True
-            else: #rotation
+            else: #rotation if can't place
                 rectangle_rotate = deepcopy(rectangle)
                 rectangle_rotate.rotate()
                 if self.can_place(rectangle_rotate, x, y):
@@ -47,7 +72,13 @@ class Box:
                 return True
         return False
 
-    def _update_placement(self, rectangle, coordinate):
+    def _update_placement(self, rectangle, coordinate) -> None:
+        """
+        Update the placement of a rectangle in the box
+        Args:
+            rectangle (Rectangle): the rectangle to be placed
+            coordinate (Tuple[int, int]): the coordinate to place the rectangle
+        """
         x, y = coordinate
         self._rectangles.append(rectangle)
         self._coordinates.remove(coordinate)

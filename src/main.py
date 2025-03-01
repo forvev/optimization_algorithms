@@ -29,20 +29,6 @@ class OptimizationProblem:
         self._rectangles = np.array([])
         self.generate_instance()
 
-    # def generate_instance(
-    #     self,
-    # ) -> None:
-    #     rectangles = []
-    #     for i in range(self._num_rectangles):
-    #         width = np.random.randint(self._min_size, self._max_size)
-    #         height = np.random.randint(self._min_size, self._max_size)
-    #         x = np.random.randint(0, self._box_size - width)
-    #         y = np.random.randint(0, self._box_size - height)
-
-    #         rectangles.append([width, height, x, y])
-
-    #     self._rectangles = np.array(rectangles)
-
     def generate_instance(self) -> None:
         rectangles = []
         for _ in range(self._num_rectangles):
@@ -78,6 +64,8 @@ class ApplyWindow(QWidget):
         self._problem = problem
         self._algorithm = None
 
+        self.setFixedSize(500, 500)
+
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
         path = parent_dir + "/resources/algorithm_widget.ui"
@@ -88,36 +76,7 @@ class ApplyWindow(QWidget):
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
             self._algorithm.run()
-    # def paintEvent(self, event):
-    #     painter = QPainter(self)
-    #     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    #     # Get widget dimensions
-    #     widget_width = self.width()
-    #     widget_height = self.height()
-
-    #     # Get box size from the problem
-    #     box_size = self._problem.get_box_size()
-
-    #     # Compute scaling factor to fit within widget
-    #     scale_factor = min(widget_width / box_size, widget_height / box_size)
-
-    #     rectangles = self._problem.get_rectangles()
-    #     for rectangle in rectangles:
-    #         width, height, x, y = rectangle
-
-    #         # Scale the rectangle dimensions
-    #         scaled_x = int(x * scale_factor)
-    #         scaled_y = int(y * scale_factor)
-    #         scaled_width = int(width * scale_factor)
-    #         scaled_height = int(height * scale_factor)
-
-    #         # Set random color
-    #         color = QColor(
-    #             np.random.randint(256), np.random.randint(256), np.random.randint(256)
-    #         )
-    #         painter.setBrush(color)
-    #         painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
+    
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -128,40 +87,38 @@ class ApplyWindow(QWidget):
         boxes = self._algorithm._boxes
         num_boxes = len(boxes)
 
-        # Arrange boxes dynamically
-        # cols = int(
-        #     np.ceil(np.sqrt(num_boxes))
-        # )  # Grid layout: square root approximation
-        # rows = int(np.ceil(num_boxes / cols))
+        if num_boxes == 0:
+            return
+    
         cols = num_boxes
         box_width = widget_width // cols
-        # box_height = widget_height // rows
 
         for i, box in enumerate(boxes):
-            col = i % cols
-            row = i // cols
             x_offset = i * box_width 
-            # y_offset = row * box_height
+            y_offset = 0
             
             # Draw box boundary
             color = QColor(255, 255, 255) if i % 2 == 0 else QColor(200, 200, 200)
             painter.setBrush(color)
             painter.drawRect(x_offset, 0, box_width, widget_height)
 
-            # for rect in box.get_rectangles():
-            #     scaled_x = x_offset + int(rect.x * (box_width / box_size))
-            #     scaled_y = y_offset + int(rect.y * (box_height / box_size))
-            #     scaled_width = int(rect.width * (box_width / box_size))
-            #     scaled_height = int(rect.height * (box_height / box_size))
+            scale_factor = min(box_width / box_size, widget_height / box_size)
 
-            #     color = QColor(
-            #         np.random.randint(256),
-            #         np.random.randint(256),
-            #         np.random.randint(256),
-            #     )
-            #     painter.setBrush(color)
-            #     painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
+            for rect, (rect_x, rect_y) in zip(box.get_rectangles(), box._coordinates):
+                # Scale positions and dimensions
+                print(box._coordinates)
+                scaled_x = x_offset + int(rect_x * scale_factor)
+                scaled_y = int(rect_y * scale_factor)
+                scaled_width = int(rect.width * scale_factor)
+                scaled_height = int(rect.height * scale_factor)
 
+                color = QColor(
+                    np.random.randint(256),
+                    np.random.randint(256),
+                    np.random.randint(256),
+                )
+                painter.setBrush(color)
+                painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
 
 class MainWindow(QMainWindow):
     def __init__(self, problem: OptimizationProblem):
@@ -175,10 +132,6 @@ class MainWindow(QMainWindow):
         uic.loadUi(path, self)
 
         self.setWindowTitle("Rectangle Packing Visualization")
-        # Visualize the rectangles using a custom widget
-        # self.visualization_widget = RectanglePackingGUI(problem, self.widget_boxes)
-        # self.visualization_widget.setParent(self)
-        # self.visualization_widget.move(0, 0)  # Position the widget inside the window
         self.init_field()
         self._pb_apply.clicked.connect(self._open_apply_window)
         self._rb_greedy_1.clicked.connect(self._on_rb_greedy_1_clicked)
@@ -230,7 +183,7 @@ class TestEnvironment:
     def run(self):
         # Define the box size, number of rectangles, and the problem instance
         optimization_problem = OptimizationProblem(
-            box_size=500, num_rectangles=30, min_size=20, max_size=40
+            box_size=100, num_rectangles=100, min_size=20, max_size=40
         )
 
         # Create the application window
@@ -245,11 +198,5 @@ class TestEnvironment:
 
 
 if __name__ == "__main__":
-    # app = QApplication([])
-    # window = QWidget()
-    # window.setWindowTitle("PyQt App")
-    # window.setGeometry(100, 100, 280, 80)
-    # helloMsg = QLabel("<h1>Hello, World!</h1>", parent=window)
-
     test_env = TestEnvironment()
     test_env.run()
