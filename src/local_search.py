@@ -5,14 +5,14 @@ from greedy import *
 # Local Search Algorithm
 class LocalSearch:
     def __init__(self, optimization_problem: OptimizationProblem, neighborhood):
-        self.problem = optimization_problem
-        self.neighborhood = neighborhood
+        self._problem = optimization_problem
+        self._neighborhood = neighborhood
 
     def run(self):
-        start = self.neighborhood.start(self.problem)
+        start = self._neighborhood.start(self._problem)
         # Perform the search by iterating through neighbors
         while True:
-            neighbors = self.neighborhood.generate_neighbors(solution)
+            neighbors = self._neighborhood.generate_neighbors(solution)
             best_neighbor = min(neighbors, key=lambda x: x.evaluate())
             if best_neighbor.evaluate() < solution.evaluate():
                 solution = best_neighbor

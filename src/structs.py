@@ -68,8 +68,6 @@ class Box:
                     rectangle.rotate()
                     self._update_placement(rectangle, coordinate)
                     return True
-                # self._update_placement(rectangle, coordinate)
-                # return True
         return False
 
     def _update_placement(self, rectangle, coordinate) -> None:
