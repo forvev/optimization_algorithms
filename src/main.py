@@ -199,6 +199,9 @@ class MainWindow(QMainWindow):
         self._pb_apply.clicked.connect(self._open_apply_window)
         self._rb_greedy_1.clicked.connect(self._on_rb_greedy_1_clicked)
         self._rb_greedy_2.clicked.connect(self._on_rb_greedy_2_clicked)
+        self._rb_neighborhood_1.clicked.connect(self._on_rb_neighborhood_1_clicked)
+        self._rb_neighborhood_2.clicked.connect(self._on_rb_neighborhood_2_clicked)
+        self._rb_neighborhood_3.clicked.connect(self._on_rb_neighborhood_3_clicked)
 
     def _open_apply_window(self):
         """Opens the apply window with the selected strategy and problem"""
