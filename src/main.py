@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QTextEdit,
 )
 from PyQt5 import uic
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 
 
 class OptimizationProblem:
@@ -39,14 +40,6 @@ class OptimizationProblem:
 
         self._rectangles = np.array(rectangles)
 
-    def move_rectangle(self, rect, source_box, target_box):
-        if target_box.place(rect):
-            source_box._rectangles.remove(rect)
-        else:
-            new_box = Box(self._box_size)
-            new_box.place(rect)
-            self._boxes.append(new_box)
-
     def get_rectangles(self):
         return self._rectangles
 
@@ -56,6 +49,17 @@ class OptimizationProblem:
     def apply_algorithm(self, algorithm):
         raise NotImplementedError()
 
+
+class AlgorithmThread(QThread):
+    finished_signal = pyqtSignal()
+
+    def __init__(self, algorithm):
+        super().__init__()
+        self._algorithm = algorithm
+
+    def run(self):
+        self._algorithm.run()
+        self.finished_signal.emit()  # Signal completion
 
 class ApplyWindow(QWidget):
     def __init__(self, problem: OptimizationProblem, strategy):
@@ -70,26 +74,53 @@ class ApplyWindow(QWidget):
 
         self.setWindowTitle("Apply Algorithm")
 
-        start_time = time.time()
+        self._start_time = time.time()
 
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
-            self._algorithm.run()
         elif isinstance(strategy, GeometryBasedNeighborhood) or isinstance(
             strategy, RuleBasedNeighborhood) or isinstance(strategy, PartialOverlapNeighborhood):
             self._algorithm = LocalSearch(problem, strategy)
-            self._algorithm.run()
         
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"Algorithm execution time: {execution_time:.4f} seconds")
+        self._thread = AlgorithmThread(self._algorithm)
+        self._thread.finished_signal.connect(self.algorithm_finished)
+        self._thread.start()
 
-        rows = (len(self._algorithm._boxes) // 10) + (
-            1 if len(self._algorithm._boxes) % 10 > 0 else 0
+        # rows = (len(self._algorithm._boxes) // 10) + (
+        #     1 if len(self._algorithm._boxes) % 10 > 0 else 0
+        # )
+
+        # 10 columns and one row as a initial size
+        self.setFixedSize(self._problem._box_size*10, self._problem._box_size)
+
+        # Run algorithm in steps using QTimer
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self.update_ui)
+        self._timer.start(1000)  # Update every 0.5 seconds
+
+
+    def update_ui(self):
+        """Updates the visualization every 0.5 seconds"""
+
+        num_boxes = len(self._algorithm._boxes)
+        boxes_per_row = 10
+        rows = (num_boxes // boxes_per_row) + (
+            1 if num_boxes % boxes_per_row > 0 else 0
         )
+        # if new_height != self.height():  # Only resize if needed
+        new_height = rows * self._problem._box_size
+        self.setFixedSize(self._problem._box_size * 10, new_height)
+        
+        
+        self.repaint()  # Redraw rectangles
+        QApplication.processEvents()  # Process UI events
 
-        # 10 columns, rows based on the number of boxes
-        self.setFixedSize(self._problem._box_size*10, rows*self._problem._box_size)
+    def algorithm_finished(self):
+        """Handles when the algorithm finishes execution"""
+        self._timer.stop()
+        end_time = time.time()
+        execution_time = end_time - self._start_time
+        print(f"Algorithm execution time: {execution_time:.4f} seconds")
 
     def paintEvent(self, event):
         painter = QPainter(self)

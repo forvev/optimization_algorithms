@@ -1,12 +1,41 @@
 from copy import deepcopy
+from collections import defaultdict
 
 class Box:
-    def __init__(self, box_size):
+    def __init__(self, box_size, grid_size=10):
         self._length = box_size
         self._rectangles = []
         self._coordinates = [(0, 0)]
         self._space = box_size * box_size
 
+        # Grid for spatial partitioning
+        self.grid_size = grid_size
+        self.grid = defaultdict(list)  # Dictionary mapping grid cells to rectangles
+
+    def _get_grid_cells(self, x, y, width, height):
+        """Get grid cells occupied by a given rectangle."""
+        start_x, start_y = x // self.grid_size, y // self.grid_size
+        end_x, end_y = (x + width) // self.grid_size, (y + height) // self.grid_size
+        return [(gx, gy) for gx in range(start_x, end_x + 1) for gy in range(start_y, end_y + 1)]
+
+    def compute_overlap(self, rectangle: "Rectangle", x, y) -> int:
+        """Compute overlap using spatial hashing."""
+        total_overlap = 0
+        cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
+
+        checked_rectangles = set()  # Avoid duplicate checks
+        for cell in cells:
+            for placed in self.grid[cell]:
+                if placed in checked_rectangles:
+                    continue
+                checked_rectangles.add(placed)
+
+                overlap_width = max(0, min(placed.x + placed.width, x + rectangle.width) - max(placed.x, x))
+                overlap_height = max(0, min(placed.y + placed.height, y + rectangle.height) - max(placed.y, y))
+                total_overlap += overlap_width * overlap_height
+
+        return total_overlap
+    
     def can_place(self, rectangle: "Rectangle", x, y) -> bool:
         """
         Check if a rectangle can be placed at a given coordinate
@@ -23,28 +52,6 @@ class Box:
         if overlap > 0:
             return False
         return True
-
-    def compute_overlap(self, rectangle: "Rectangle", x, y) -> int:
-        """
-        Compute the overlap of a rectangle with the rectangles already placed in the box
-        Args:
-            rectangle (Rectangle): the rectangle to be placed
-            x (int): x coordinate
-            y (int): y coordinate
-        Returns:
-            int: the total overlap area
-        """
-        total_overlap = 0
-        for placed in self._rectangles:
-            overlap_width = max(
-                0, min(placed.x + placed.width, x + rectangle.width) - max(placed.x, x)
-            )
-            overlap_height = max(
-                0,
-                min(placed.y + placed.height, y + rectangle.height) - max(placed.y, y),
-            )
-            total_overlap += overlap_width * overlap_height
-        return total_overlap
 
     def place(self, rectangle: "Rectangle") -> bool:
         """
@@ -70,18 +77,17 @@ class Box:
                     return True
         return False
 
-    def _update_placement(self, rectangle, coordinate) -> None:
-        """
-        Update the placement of a rectangle in the box
-        Args:
-            rectangle (Rectangle): the rectangle to be placed
-            coordinate (Tuple[int, int]): the coordinate to place the rectangle
-        """
+    def _update_placement(self, rectangle, coordinate):
+        """Update placement and store in grid."""
         x, y = coordinate
-
-        rectangle.x = x
-        rectangle.y = y
+        rectangle.x, rectangle.y = x, y
         self._rectangles.append(rectangle)
+
+        # Update grid
+        cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
+        for cell in cells:
+            self.grid[cell].append(rectangle)
+
         self._coordinates.remove(coordinate)
         self._coordinates.append((x + rectangle.width, y))
         self._coordinates.append((x, y + rectangle.height))
