@@ -32,8 +32,8 @@ class OptimizationProblem:
     def generate_instance(self) -> None:
         rectangles = []
         for _ in range(self._num_rectangles):
-            width = np.random.randint(self._min_size, self._max_size)
-            height = np.random.randint(self._min_size, self._max_size)
+            width = np.random.randint(self._min_size, self._max_size+1)
+            height = np.random.randint(self._min_size, self._max_size+1)
             rect = Rectangle(width, height, 0, 0)
 
             rectangles.append(rect)
