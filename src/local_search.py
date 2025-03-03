@@ -15,7 +15,7 @@ class LocalSearch:
         # Perform the search by iterating through neighbors
         while True:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
-            best_neighbor = min(neighbors, key=lambda x: self._neighborhood.evaluate(x))
+            best_neighbor = neighbors[0] # min(neighbors, key=lambda x: self._neighborhood.evaluate(x))
             if self._neighborhood.evaluate(best_neighbor) < self._neighborhood.evaluate(self._boxes):
                 self._boxes = best_neighbor
             else:
@@ -71,26 +71,24 @@ class GeometryBasedNeighborhood(Neighborhood):
     def _move_rectangle(self, solution):
         """ Move a rectangle from one box to another if space allows """
         neighbors = []
-        for j, targeted_box in enumerate(solution):
-            for i, source_box in enumerate(solution):
+        new_solution: list[Box] = deepcopy(solution)
+        for j, targeted_box in enumerate(new_solution):
+            for i, source_box in enumerate(new_solution):
                 if i == j:
                     continue
                 for rect in source_box.get_rectangles():
-                    new_solution = deepcopy(solution)
-                    new_source_box = new_solution[i]
                     new_target_box = new_solution[j]
+                    new_source_box = new_solution[i]
 
                     # If the source box becomes empty, remove it
                     if not new_source_box.get_rectangles():
                         new_solution.pop(i)
                         # Add the modified solution as a neighbor
                         neighbors.append(new_solution)
-                        continue
+                        break
 
                     if new_target_box.place(rect):
-                        # Move the rectangle from the source to the target box
-                        # new_source_box._rectangles.remove(rect)
-                        pass
+                        new_solution[i].remove_rectangle(rect)
                     else:
                         continue
 

@@ -106,6 +106,16 @@ class Box:
     def get_space(self):
         return self._space
 
+    def remove_rectangle(self, rectangle: "Rectangle"):
+        """Remove a rectangle from the box."""
+        self._rectangles.remove(rectangle)
+        self._space += rectangle.width * rectangle.height
+        x, y = rectangle.x, rectangle.y
+        self._coordinates.add((x, y))
+        if not (x + rectangle.width >= self._length):
+            self._coordinates.discard((x + rectangle.width, y))
+        if not (y + rectangle.height >= self._length):
+            self._coordinates.discard((x, y + rectangle.height))
 
 class Rectangle:
     def __init__(self, width, height, x, y):
