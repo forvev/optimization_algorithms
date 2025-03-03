@@ -103,6 +103,9 @@ class Box:
     def get_rectangles(self):
         return self._rectangles
 
+    def get_space(self):
+        return self._space
+
 
 class Rectangle:
     def __init__(self, width, height, x, y):
