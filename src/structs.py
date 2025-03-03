@@ -13,6 +13,13 @@ class Box:
         self.grid_size = grid_size
         self.grid = defaultdict(list)  # Dictionary mapping grid cells to rectangles
 
+    def evaluate(self):
+        """
+            Evaluate the box based on empty space or other factors
+            Example: we could count unused space (maximize packing)
+        """
+        return self._space - sum(r.width * r.height for r in self._rectangles)
+    
     def _get_grid_cells(self, x, y, width, height):
         """Get grid cells occupied by a given rectangle."""
         start_x, start_y = x // self.grid_size, y // self.grid_size

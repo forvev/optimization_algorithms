@@ -86,10 +86,6 @@ class ApplyWindow(QWidget):
         self._thread.finished_signal.connect(self.algorithm_finished)
         self._thread.start()
 
-        # rows = (len(self._algorithm._boxes) // 10) + (
-        #     1 if len(self._algorithm._boxes) % 10 > 0 else 0
-        # )
-
         # 10 columns and one row as a initial size
         self.setFixedSize(self._problem._box_size*10, self._problem._box_size)
 
