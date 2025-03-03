@@ -66,7 +66,7 @@ class GeometryBasedNeighborhood(Neighborhood):
         scored_neighbors.sort(reverse=True, key=lambda x: x[0])
 
         # Return the top N best neighbors (adjustable for efficiency)
-        return [neigh for _, neigh in scored_neighbors[:10]]  
+        return [neigh for _, neigh in scored_neighbors[:10]]
 
     def _move_rectangle(self, solution):
         """ Move a rectangle from one box to another if space allows """
@@ -122,10 +122,10 @@ class GeometryBasedNeighborhood(Neighborhood):
             for rect in box.get_rectangles():
                 rotated_rect = deepcopy(rect)
                 rotated_rect.rotate()
-                if box.can_place(rotated_rect, rect.x, rect.y):  
+                if box.can_place(rotated_rect, rect.x, rect.y):
                     new_solution = deepcopy(solution)
                     new_solution[i].remove(rect)
-                    if new_solution[i].place(rotated_rect):  
+                    if new_solution[i].place(rotated_rect):
                         neighbors.append(new_solution)
         return neighbors
 
@@ -139,19 +139,19 @@ class GeometryBasedNeighborhood(Neighborhood):
         """
         num_boxes = len(solution)
         # empty_boxes = sum(1 for box in solution if len(box.get_rectangles()) == 0)
-        total_wasted_space = sum(box.evaluate() for box in solution)
+        total_wasted_space = sum(box.get_space() for box in solution)
 
         score = 1000 - (num_boxes * 50) - total_wasted_space
 
         return score
 
     def evaluate(self, solution):
-        total_wasted_space = sum(box.evaluate() for box in solution)  
+        total_wasted_space = sum(box.get_space() for box in solution)
         num_used_boxes = len([box for box in solution if box.get_rectangles()])
 
         # Objective: Minimize wasted space and the number of boxes
         return total_wasted_space + (num_used_boxes * 50)
-                                                           
+
 
 class RuleBasedNeighborhood(Neighborhood):
     def generate_neighbors(self, solution):
