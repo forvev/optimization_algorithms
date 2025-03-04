@@ -1,4 +1,3 @@
-from copy import deepcopy
 from collections import defaultdict
 import numpy as np
 
@@ -72,7 +71,8 @@ class Box:
                 self._update_placement(rectangle, coordinate)
                 return True
             else: #rotation if can't place
-                rectangle_rotate = deepcopy(rectangle)
+                rectangle_rotate = Rectangle(rectangle.width, rectangle.height, rectangle.x, rectangle.y)
+                rectangle_rotate.rotate()
                 rectangle_rotate.rotate()
                 if self.can_place(rectangle_rotate, x, y):
                     rectangle.rotate()
