@@ -81,7 +81,7 @@ class ApplyWindow(QWidget):
         elif isinstance(strategy, GeometryBasedNeighborhood) or isinstance(
             strategy, RuleBasedNeighborhood) or isinstance(strategy, PartialOverlapNeighborhood):
             self._algorithm = LocalSearch(problem, strategy)
-        
+
         self._thread = AlgorithmThread(self._algorithm)
         self._thread.finished_signal.connect(self.algorithm_finished)
         self._thread.start()
@@ -92,12 +92,9 @@ class ApplyWindow(QWidget):
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.update_ui)
-        self._timer.start(1) # todo: fix it!
-
+        self._timer.start(1000) # todo: fix it!
 
     def update_ui(self):
-        """Updates the visualization every 0.5 seconds"""
-        
         num_boxes = len(self._algorithm._boxes)
         boxes_per_row = 10
         rows = (num_boxes // boxes_per_row) + (
@@ -106,8 +103,8 @@ class ApplyWindow(QWidget):
         # if new_height != self.height():  # Only resize if needed
         new_height = rows * self._problem._box_size
         self.setFixedSize(self._problem._box_size * 10, new_height)
-        
-        
+
+
         self.repaint()  # Redraw rectangles
         QApplication.processEvents()  # Process UI events
 
@@ -117,6 +114,10 @@ class ApplyWindow(QWidget):
         end_time = time.time()
         execution_time = end_time - self._start_time
         print(f"Algorithm execution time: {execution_time:.4f} seconds")
+
+        # if algorithm takes less than one second, refresh
+        if execution_time < 1:
+            self.update_ui()
 
     def paintEvent(self, event):
         painter = QPainter(self)
