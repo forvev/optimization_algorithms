@@ -4,6 +4,9 @@ import numpy as np
 import sys
 import os
 import time
+import json
+from datetime import datetime
+
 
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtWidgets import (
@@ -13,10 +16,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QRadioButton,
     QTextEdit,
+    QCheckBox,
 )
 from PyQt5 import uic
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
-
 
 class OptimizationProblem:
     def __init__(
@@ -92,7 +95,7 @@ class ApplyWindow(QWidget):
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.update_ui)
-        self._timer.start(1000) # todo: fix it!
+        self._timer.start(1000)
 
     def update_ui(self):
         num_boxes = len(self._algorithm._boxes)
@@ -103,7 +106,6 @@ class ApplyWindow(QWidget):
         # if new_height != self.height():  # Only resize if needed
         new_height = rows * self._problem._box_size
         self.setFixedSize(self._problem._box_size * 10, new_height)
-
 
         self.repaint()  # Redraw rectangles
         QApplication.processEvents()  # Process UI events
@@ -175,7 +177,7 @@ class ApplyWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, problem: OptimizationProblem):
+    def __init__(self, problem: OptimizationProblem, logging_mode=False):
         super().__init__()
         self._problem = problem
         self._strategy = None
@@ -216,9 +218,62 @@ class MainWindow(QMainWindow):
                 int(self._max_size_value.text()),
             )
 
-        # create the apply window every time the apply button is clicked
-        self._apply_window = ApplyWindow(self._problem, self._strategy)
-        self._apply_window.show()
+        if self._cb_extensive_mode.isChecked():
+            self._run_log_file()
+        else:
+            # create the apply window every time the apply button is clicked
+            self._apply_window = ApplyWindow(self._problem, self._strategy)
+            self._apply_window.show()
+
+    def _run_log_file(self):
+        """Log results to a JSON file"""
+
+        # Simulate running the algorithm without GUI
+        start_time = time.time()
+
+        algorithm_data = {
+            "test_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "box_size": self._problem._box_size,
+            "min random value": self._problem._min_size,
+            "max random value": self._problem._max_size,
+            "algorithms": []
+        }
+
+        # Run the selected strategy and algorithm
+        if self._strategy:
+            algorithm = None
+            if isinstance(self._strategy, GreedyArea) or isinstance(self._strategy, GreedyPerimeter):
+                algorithm = Greedy(self._problem, self._strategy)
+            elif isinstance(self._strategy, GeometryBasedNeighborhood) or isinstance(
+                self._strategy, RuleBasedNeighborhood) or isinstance(self._strategy, PartialOverlapNeighborhood):
+                algorithm = LocalSearch(self._problem, self._strategy)
+
+            algorithm.run()
+
+            # Collect algorithm run data
+            algorithm_run_data = {
+                "algorithm": type(algorithm).__name__,
+                "num_rectangles": self._problem._num_rectangles,
+                "num_boxes_generated": len(algorithm._boxes),
+                "time": time.time() - start_time,
+                "utilization": [box.get_space() for box in algorithm._boxes],  # Space utilization per box
+                "strategy": self._strategy.__class__.__name__,
+                "neighborhood": self._strategy.neighborhood.__class__.__name__ if isinstance(self._strategy, LocalSearch) else None
+            }
+
+            algorithm_data["algorithms"].append(algorithm_run_data)
+
+            # Output the log to a JSON file
+            log_dir = "logs"
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+
+            log_file = os.path.join(log_dir, "algorithm_log.json")
+            with open(log_file, "a") as json_file:
+                json.dump(algorithm_data, json_file, indent=4)
+                json_file.write("\n")
+
+            print(f"Algorithm execution time: {algorithm_run_data['time']:.4f} seconds")
 
     def _on_rb_greedy_1_clicked(
         self,
@@ -242,6 +297,7 @@ class MainWindow(QMainWindow):
     def init_field(self) -> None:
         """Initializes the fields of the main window (because it helps with the suggestions)"""
         self._pb_apply: QPushButton = self.pb_apply
+        self._cb_extensive_mode: QCheckBox = self.cb_extensive_mode
         self._rb_greedy_1: QRadioButton = self.rb_greedy_1
         self._rb_greedy_2: QRadioButton = self.rb_greedy_2
         self._rb_neighborhood_1: QRadioButton = self.rb_neighborhood_1

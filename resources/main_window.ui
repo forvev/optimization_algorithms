@@ -124,6 +124,13 @@
       </layout>
      </item>
      <item>
+      <widget class="QCheckBox" name="cb_extensive_mode">
+       <property name="text">
+        <string>The extensive mode with logging to a file</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <widget class="QPushButton" name="pb_apply">
