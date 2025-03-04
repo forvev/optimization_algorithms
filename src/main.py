@@ -92,7 +92,7 @@ class ApplyWindow(QWidget):
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.update_ui)
-        self._timer.start(1000)  # Update every 0.5 seconds
+        self._timer.start(1000)  # Update every 1 second
 
 
     def update_ui(self):

@@ -15,7 +15,7 @@ class LocalSearch:
         # Perform the search by iterating through neighbors
         while True:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
-            best_neighbor = neighbors[0] # min(neighbors, key=lambda x: self._neighborhood.evaluate(x))
+            best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]  # min(neighbors, key=lambda x: self._neighborhood.evaluate(x))
             if self._neighborhood.evaluate(best_neighbor) < self._neighborhood.evaluate(self._boxes):
                 self._boxes = best_neighbor
             else:
@@ -72,29 +72,33 @@ class GeometryBasedNeighborhood(Neighborhood):
         """ Move a rectangle from one box to another if space allows """
         neighbors = []
         new_solution: list[Box] = deepcopy(solution)
+        print(f"new_solution: {len(new_solution)}")
         for j, targeted_box in enumerate(new_solution):
-            for i, source_box in enumerate(new_solution):
-                if i == j:
+            remove_index = 0 # To adjust the index after removing a box 
+            # (e.g, if a box is removed, the index of the next box will be reduced by 1 not by 2)
+            for i, source_box in enumerate(reversed(new_solution)):
+                real_index = len(new_solution) - 1 - i + remove_index
+                if real_index == j:
                     continue
-                for rect in source_box.get_rectangles():
-                    new_target_box = new_solution[j]
-                    new_source_box = new_solution[i]
-
-                    # If the source box becomes empty, remove it
-                    if not new_source_box.get_rectangles():
-                        new_solution.pop(i)
-                        # Add the modified solution as a neighbor
-                        neighbors.append(new_solution)
-                        break
-
-                    if new_target_box.place(rect):
-                        new_solution[i].remove_rectangle(rect)
+                for rect_num, rect in enumerate(source_box.get_rectangles()):
+                    if new_solution[j].place(rect):
+                        new_solution[real_index].remove_rectangle(rect)
                     else:
                         continue
+                    
+                    # If the source box becomes empty, remove it
+                    if new_solution[real_index].get_rectangles() == []:
+                        new_solution.pop(real_index)
+                        remove_index += 1
+
+                        # # Add the modified solution as a neighbor
+                        # neighbors.append(new_solution)
+                        # break
 
                     # Add the modified solution as a neighbor
                     neighbors.append(new_solution)
         return neighbors
+    
 
     def _swap_rectangles(self, solution):
         """ Swap two rectangles between different boxes if both can fit in the other's space """
