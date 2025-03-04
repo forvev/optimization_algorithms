@@ -1,5 +1,6 @@
 from copy import deepcopy
 from collections import defaultdict
+import numpy as np
 
 class Box:
     def __init__(self, box_size, grid_size=10):
@@ -123,6 +124,11 @@ class Rectangle:
         self.height = height
         self.x = x
         self.y = y
+        self.color = self.generate_random_color()  # Assign a color when created
 
     def rotate(self):
         self.width, self.height = self.height, self.width
+
+    def generate_random_color(self):
+        """Generate a random RGB color as a tuple."""
+        return (np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256))

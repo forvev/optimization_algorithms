@@ -163,19 +163,13 @@ class ApplyWindow(QWidget):
                 scale_factor = min(
                     box_width / box_size, (widget_height // rows) / box_size
                 )
-
                 for rect in box.get_rectangles():
-                    # Scale positions and dimensions
                     scaled_x = x_offset + int(rect.x * scale_factor)
                     scaled_y = y_offset + int(rect.y * scale_factor)
                     scaled_width = int(rect.width * scale_factor)
                     scaled_height = int(rect.height * scale_factor)
 
-                    color = QColor(
-                        np.random.randint(256),
-                        np.random.randint(256),
-                        np.random.randint(256),
-                    )
+                    color = QColor(*rect.color)  # Use the rectangle's assigned color
                     painter.setBrush(color)
                     painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
 
