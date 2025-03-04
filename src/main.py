@@ -92,12 +92,12 @@ class ApplyWindow(QWidget):
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.update_ui)
-        self._timer.start(1000)  # Update every 1 second
+        self._timer.start(1) # todo: fix it!
 
 
     def update_ui(self):
         """Updates the visualization every 0.5 seconds"""
-
+        
         num_boxes = len(self._algorithm._boxes)
         boxes_per_row = 10
         rows = (num_boxes // boxes_per_row) + (

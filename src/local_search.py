@@ -16,6 +16,7 @@ class LocalSearch:
         while True:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
             best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]  # min(neighbors, key=lambda x: self._neighborhood.evaluate(x))
+            print("len(neighbors): ", len(neighbors))
             if self._neighborhood.evaluate(best_neighbor) < self._neighborhood.evaluate(self._boxes):
                 self._boxes = best_neighbor
             else:
@@ -72,7 +73,6 @@ class GeometryBasedNeighborhood(Neighborhood):
         """ Move a rectangle from one box to another if space allows """
         neighbors = []
         new_solution: list[Box] = deepcopy(solution)
-        print(f"new_solution: {len(new_solution)}")
         for j, targeted_box in enumerate(new_solution):
             remove_index = 0 # To adjust the index after removing a box 
             # (e.g, if a box is removed, the index of the next box will be reduced by 1 not by 2)
