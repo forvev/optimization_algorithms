@@ -21,37 +21,6 @@ from PyQt5.QtWidgets import (
 from PyQt5 import uic
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 
-class OptimizationProblem:
-    def __init__(
-        self, box_size: int, num_rectangles: int, min_size: int, max_size: int
-    ) -> None:
-        self._box_size = box_size
-        self._num_rectangles = num_rectangles
-        self._min_size = min_size
-        self._max_size = max_size
-        self._rectangles = np.array([])
-        self.generate_instance()
-
-    def generate_instance(self) -> None:
-        rectangles = []
-        for _ in range(self._num_rectangles):
-            width = np.random.randint(self._min_size, self._max_size+1)
-            height = np.random.randint(self._min_size, self._max_size+1)
-            rect = Rectangle(width, height, 0, 0)
-
-            rectangles.append(rect)
-
-        self._rectangles = np.array(rectangles)
-
-    def get_rectangles(self):
-        return self._rectangles
-
-    def get_box_size(self) -> int:
-        return self._box_size
-
-    def apply_algorithm(self, algorithm):
-        raise NotImplementedError()
-
 
 class AlgorithmThread(QThread):
     finished_signal = pyqtSignal()

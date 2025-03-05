@@ -1,4 +1,3 @@
-# from main import OptimizationProblem
 from structs import *
 import numpy as np
 

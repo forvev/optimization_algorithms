@@ -1,4 +1,3 @@
-from main import OptimizationProblem
 from structs import *
 from greedy import *
 from copy import deepcopy
