@@ -4,6 +4,9 @@ import numpy as np
 import sys
 import os
 import time
+import json
+from datetime import datetime
+
 
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtWidgets import (
@@ -13,10 +16,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QRadioButton,
     QTextEdit,
+    QCheckBox,
 )
 from PyQt5 import uic
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
-
 
 class OptimizationProblem:
     def __init__(
@@ -81,14 +84,10 @@ class ApplyWindow(QWidget):
         elif isinstance(strategy, GeometryBasedNeighborhood) or isinstance(
             strategy, RuleBasedNeighborhood) or isinstance(strategy, PartialOverlapNeighborhood):
             self._algorithm = LocalSearch(problem, strategy)
-        
+
         self._thread = AlgorithmThread(self._algorithm)
         self._thread.finished_signal.connect(self.algorithm_finished)
         self._thread.start()
-
-        # rows = (len(self._algorithm._boxes) // 10) + (
-        #     1 if len(self._algorithm._boxes) % 10 > 0 else 0
-        # )
 
         # 10 columns and one row as a initial size
         self.setFixedSize(self._problem._box_size*10, self._problem._box_size)
@@ -96,12 +95,9 @@ class ApplyWindow(QWidget):
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.update_ui)
-        self._timer.start(1000)  # Update every 0.5 seconds
-
+        self._timer.start(1000)
 
     def update_ui(self):
-        """Updates the visualization every 0.5 seconds"""
-
         num_boxes = len(self._algorithm._boxes)
         boxes_per_row = 10
         rows = (num_boxes // boxes_per_row) + (
@@ -110,8 +106,7 @@ class ApplyWindow(QWidget):
         # if new_height != self.height():  # Only resize if needed
         new_height = rows * self._problem._box_size
         self.setFixedSize(self._problem._box_size * 10, new_height)
-        
-        
+
         self.repaint()  # Redraw rectangles
         QApplication.processEvents()  # Process UI events
 
@@ -121,6 +116,10 @@ class ApplyWindow(QWidget):
         end_time = time.time()
         execution_time = end_time - self._start_time
         print(f"Algorithm execution time: {execution_time:.4f} seconds")
+
+        # if algorithm takes less than one second, refresh
+        if execution_time < 1:
+            self.update_ui()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -166,25 +165,19 @@ class ApplyWindow(QWidget):
                 scale_factor = min(
                     box_width / box_size, (widget_height // rows) / box_size
                 )
-
                 for rect in box.get_rectangles():
-                    # Scale positions and dimensions
                     scaled_x = x_offset + int(rect.x * scale_factor)
                     scaled_y = y_offset + int(rect.y * scale_factor)
                     scaled_width = int(rect.width * scale_factor)
                     scaled_height = int(rect.height * scale_factor)
 
-                    color = QColor(
-                        np.random.randint(256),
-                        np.random.randint(256),
-                        np.random.randint(256),
-                    )
+                    color = QColor(*rect.color)  # Use the rectangle's assigned color
                     painter.setBrush(color)
                     painter.drawRect(scaled_x, scaled_y, scaled_width, scaled_height)
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, problem: OptimizationProblem):
+    def __init__(self, problem: OptimizationProblem, logging_mode=False):
         super().__init__()
         self._problem = problem
         self._strategy = None
@@ -199,6 +192,9 @@ class MainWindow(QMainWindow):
         self._pb_apply.clicked.connect(self._open_apply_window)
         self._rb_greedy_1.clicked.connect(self._on_rb_greedy_1_clicked)
         self._rb_greedy_2.clicked.connect(self._on_rb_greedy_2_clicked)
+        self._rb_neighborhood_1.clicked.connect(self._on_rb_neighborhood_1_clicked)
+        self._rb_neighborhood_2.clicked.connect(self._on_rb_neighborhood_2_clicked)
+        self._rb_neighborhood_3.clicked.connect(self._on_rb_neighborhood_3_clicked)
 
     def _open_apply_window(self):
         """Opens the apply window with the selected strategy and problem"""
@@ -222,9 +218,62 @@ class MainWindow(QMainWindow):
                 int(self._max_size_value.text()),
             )
 
-        # create the apply window every time the apply button is clicked
-        self._apply_window = ApplyWindow(self._problem, self._strategy)
-        self._apply_window.show()
+        if self._cb_extensive_mode.isChecked():
+            self._run_log_file()
+        else:
+            # create the apply window every time the apply button is clicked
+            self._apply_window = ApplyWindow(self._problem, self._strategy)
+            self._apply_window.show()
+
+    def _run_log_file(self):
+        """Log results to a JSON file"""
+
+        # Simulate running the algorithm without GUI
+        start_time = time.time()
+
+        algorithm_data = {
+            "test_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "box_size": self._problem._box_size,
+            "min random value": self._problem._min_size,
+            "max random value": self._problem._max_size,
+            "algorithms": []
+        }
+
+        # Run the selected strategy and algorithm
+        if self._strategy:
+            algorithm = None
+            if isinstance(self._strategy, GreedyArea) or isinstance(self._strategy, GreedyPerimeter):
+                algorithm = Greedy(self._problem, self._strategy)
+            elif isinstance(self._strategy, GeometryBasedNeighborhood) or isinstance(
+                self._strategy, RuleBasedNeighborhood) or isinstance(self._strategy, PartialOverlapNeighborhood):
+                algorithm = LocalSearch(self._problem, self._strategy)
+
+            algorithm.run()
+
+            # Collect algorithm run data
+            algorithm_run_data = {
+                "algorithm": type(algorithm).__name__,
+                "num_rectangles": self._problem._num_rectangles,
+                "num_boxes_generated": len(algorithm._boxes),
+                "time": time.time() - start_time,
+                "utilization": [box.get_space() for box in algorithm._boxes],  # Space utilization per box
+                "strategy": self._strategy.__class__.__name__,
+                "neighborhood": self._strategy.neighborhood.__class__.__name__ if isinstance(self._strategy, LocalSearch) else None
+            }
+
+            algorithm_data["algorithms"].append(algorithm_run_data)
+
+            # Output the log to a JSON file
+            log_dir = "logs"
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+
+            log_file = os.path.join(log_dir, "algorithm_log.json")
+            with open(log_file, "a") as json_file:
+                json.dump(algorithm_data, json_file, indent=4)
+                json_file.write("\n")
+
+            print(f"Algorithm execution time: {algorithm_run_data['time']:.4f} seconds")
 
     def _on_rb_greedy_1_clicked(
         self,
@@ -248,6 +297,7 @@ class MainWindow(QMainWindow):
     def init_field(self) -> None:
         """Initializes the fields of the main window (because it helps with the suggestions)"""
         self._pb_apply: QPushButton = self.pb_apply
+        self._cb_extensive_mode: QCheckBox = self.cb_extensive_mode
         self._rb_greedy_1: QRadioButton = self.rb_greedy_1
         self._rb_greedy_2: QRadioButton = self.rb_greedy_2
         self._rb_neighborhood_1: QRadioButton = self.rb_neighborhood_1
