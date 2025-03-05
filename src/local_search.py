@@ -24,7 +24,13 @@ class LocalSearch:
 
 
 class Neighborhood:
+    def start(self, problem: OptimizationProblem):
+        raise NotImplementedError()
+
     def generate_neighbors(self, solution):
+        raise NotImplementedError()
+
+    def evaluate(self, solution):
         raise NotImplementedError()
 
 class GeometryBasedNeighborhood(Neighborhood):
@@ -143,15 +149,53 @@ class GeometryBasedNeighborhood(Neighborhood):
 
 
 class RuleBasedNeighborhood(Neighborhood):
-    def generate_neighbors(self, solution):
-        # Generate neighbors by modifying the order of rectangles
-        neighbors = []
-        # Add logic for permutation-based neighborhoods
-        return neighbors
+    def __init__(self):
+        self._order = []
 
     def start(self, problem):
         solution = Greedy(problem, GreedyArea).run()
+        self._order = sorted(problem.get_rectangles(),
+                             key=lambda x: x.width * x.height, reverse=True)
         return solution
+
+    def generate_neighbors(self, solution):
+        # Generate neighbors by modifying the order of rectangles
+        neighbors = []
+        best_score = self.evaluate(solution)
+        best_neighbor = solution
+        length = len(self._order)
+        box_size = solution[0].get_length()
+        prev_order = self._order
+        #permutate order of elements
+        for i in range(length):
+            for j in range(length):
+                new_order = prev_order
+                new_order[i], new_order[j] = new_order[j], new_order[i]
+                #each permutation creates a new neighbor
+                new_neighbor = []
+                for rectangle in new_order:
+                    placed = False
+                    for box in new_neighbor:
+                        placed = box.place(rectangle)
+                        if placed: break
+                    if not placed:
+                        box = Box(box_size)
+                        box.place(rectangle)
+                        new_neighbor.append(box)
+                    #only save neighbor if it is better
+                    score = self.evaluate(new_neighbor)
+                    if score < best_score:
+                        best_score = score
+                        best_neighbor = new_neighbor
+                        self._order = new_order
+        return neighbors.append(best_neighbor)
+
+    def evaluate(self, solution):
+        num_boxes = len(solution)
+        box_length = solution[0].get_box_length()
+        space_last_box = solution[-1].get_space() / box_length*box_length
+        score = num_boxes*100 + space_last_box
+        return score
 
 class PartialOverlapNeighborhood(Neighborhood):
     def generate_neighbors(self, solution):
