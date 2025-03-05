@@ -104,6 +104,9 @@ class Box:
     def get_space(self):
         return self._space
 
+    def get_length(self):
+        return self._length
+
     def remove_rectangle(self, rectangle: "Rectangle"):
         """Remove a rectangle from the box."""
         self._rectangles.remove(rectangle)
@@ -128,4 +131,4 @@ class Rectangle:
 
     def generate_random_color(self):
         """Generate a random RGB color as a tuple."""
-        return (np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256))
+        return np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256)
