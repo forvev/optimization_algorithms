@@ -1,6 +1,9 @@
+import random
+
 from structs import *
 from greedy import *
 from copy import deepcopy
+from scoring import *
 
 # Local Search Algorithm
 class LocalSearch:
@@ -15,7 +18,9 @@ class LocalSearch:
         while True:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
             best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]
-            if self._neighborhood._score_solution(best_neighbor) > self._neighborhood._score_solution(self._boxes):
+            if self._neighborhood.evaluate(best_neighbor) > self._neighborhood.evaluate(self._boxes):
+                print(self._neighborhood.evaluate(best_neighbor))
+                print("selecting better neighbor")
                 self._boxes = best_neighbor
             else:
                 break
@@ -30,7 +35,24 @@ class Neighborhood:
         raise NotImplementedError()
 
     def evaluate(self, solution):
-        raise NotImplementedError()
+        # get relevant infos
+        num_boxes = len(solution)
+        minimum_util = compute_min_utilization(solution)
+        avg_compactness = compute_average_compactness(solution)
+        avg_irregular_gap = compute_average_irregular_gap_penalty(solution)
+        avg_contiguity = compute_average_contiguity(solution)
+
+        # weights
+        w_num_boxes = 1000
+        w_min_util = 150
+        w_compact = 100
+        w_ir_gap = 100
+        w_contiguity = 50
+
+        score = (- w_num_boxes * num_boxes + w_min_util * minimum_util
+                 + w_compact * avg_compactness - w_ir_gap * avg_irregular_gap
+                 + w_contiguity * avg_contiguity)
+        return score
 
 class GeometryBasedNeighborhood(Neighborhood):
     """
@@ -60,7 +82,7 @@ class GeometryBasedNeighborhood(Neighborhood):
         # swap_neighbors = self._swap_rectangles(solution)
 
         all_neighbors = move_neighbors# + swap_neighbors + rotate_neighbors
-        scored_neighbors = [(self._score_solution(neigh), neigh) for neigh in all_neighbors]
+        scored_neighbors = [(self.evaluate(neigh), neigh) for neigh in all_neighbors]
         scored_neighbors.sort(reverse=True, key=lambda x: x[0])
 
         # Return the top N best neighbors (adjustable for efficiency)
@@ -126,25 +148,12 @@ class GeometryBasedNeighborhood(Neighborhood):
 
     #     return neighbors
 
-    def _score_solution(self, solution):
-        """
-        Assign a reward-based score to encourage promising moves.
-        Higher scores are given to solutions that:
-        - Use fewer boxes
-        - Reduce the number of nearly empty boxes
-        """
+    def evaluate(self, solution):
         num_boxes = len(solution)
         total_wasted_space = sum(box.get_space() for box in solution)
         score = 1000 - (num_boxes * 50) - total_wasted_space
 
         return score
-
-    def evaluate(self, solution):
-        num_boxes = len(solution)
-        total_wasted_space = sum(box.get_space() for box in solution)
-
-        # Objective: Minimize wasted space and the number of boxes
-        return total_wasted_space + (num_boxes * 50)
 
 
 class RuleBasedNeighborhood(Neighborhood):
@@ -152,7 +161,9 @@ class RuleBasedNeighborhood(Neighborhood):
         self._order = []
 
     def start(self, problem):
-        solution = Greedy(problem, GreedyArea).run()
+        greedy_area = Greedy(problem, GreedyArea())
+        greedy_area.run()
+        solution = greedy_area.get_solution()
         self._order = sorted(problem.get_rectangles(),
                              key=lambda x: x.width * x.height, reverse=True)
         return solution
@@ -165,36 +176,32 @@ class RuleBasedNeighborhood(Neighborhood):
         length = len(self._order)
         box_size = solution[0].get_length()
         prev_order = self._order
-        #permutate order of elements
-        for i in range(length):
-            for j in range(length):
-                new_order = prev_order
-                new_order[i], new_order[j] = new_order[j], new_order[i]
-                #each permutation creates a new neighbor
-                new_neighbor = []
-                for rectangle in new_order:
-                    placed = False
-                    for box in new_neighbor:
-                        placed = box.place(rectangle)
-                        if placed: break
-                    if not placed:
-                        box = Box(box_size)
-                        box.place(rectangle)
-                        new_neighbor.append(box)
-                    #only save neighbor if it is better
-                    score = self.evaluate(new_neighbor)
-                    if score < best_score:
-                        best_score = score
-                        best_neighbor = new_neighbor
-                        self._order = new_order
-        return neighbors.append(best_neighbor)
+        #randomly permutate order of elements
+        for i in range(length-1):
+            shift = random.randint(0, length -1 - i)
+            new_order = prev_order
+            new_order[i], new_order[i + 1] = new_order[i + 1], new_order[i]
+            #each permutation creates a new neighbor
+            new_neighbor = [ShelfBox(box_size)]
+            for rectangle in new_order:
+                placed = False
+                for box in new_neighbor:
+                    placed = box.place(rectangle)
+                    if placed: break
+                if not placed:
+                    box = ShelfBox(box_size)
+                    box.place(rectangle)
+                    new_neighbor.append(box)
+                #only save neighbor if it is better
+                score = self.evaluate(new_neighbor)
+                if score < best_score:
+                    best_score = score
+                    best_neighbor = new_neighbor
+                    self._order = new_order
+        neighbors.append(best_neighbor)
+        return neighbors
 
-    def evaluate(self, solution):
-        num_boxes = len(solution)
-        box_length = solution[0].get_box_length()
-        space_last_box = solution[-1].get_space() / box_length*box_length
-        score = num_boxes*100 + space_last_box
-        return score
+
 
 class PartialOverlapNeighborhood(Neighborhood):
     def generate_neighbors(self, solution):
