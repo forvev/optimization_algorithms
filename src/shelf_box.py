@@ -1,101 +1,107 @@
 ###############################################################################
-# optimized_shelf_box.py
+# no_overlap_shelf_box.py
 ###############################################################################
 from structs import Rectangle
 
 class ShelfBox:
     """
-    Optimized ShelfBox that packs rectangles using the Shelf method.
-    It caches the total vertical height used (self.used_height) to avoid iterating
-    through shelves on each placement.
+    A shelf-based packing algorithm that guarantees no overlaps by using fixed
+    shelf heights. Each shelf is created with a height equal to the first rectangle's
+    height placed in it. Subsequent rectangles are only placed in shelves that can
+    accommodate their height. If no shelf fits, a new shelf is created.
     """
-    def __init__(self, box_size):
+    def __init__(self, box_size: int):
         self._length = box_size
-        self.shelves = []  # List of shelves (each a dict)
-        self.used_height = 0  # Total height used by shelves so far
-        self._space = box_size * box_size  # Remaining space (if needed for heuristics)
+        self.shelves = []  # List of shelves; each is a dict with keys: start_y, height, gaps, rectangles.
+        self.used_area = 0
+
+    def _create_new_shelf(self, rectangle: Rectangle) -> bool:
+        """
+        Create a new shelf with fixed height equal to the rectangle's height.
+        The new shelf is added only if there is enough vertical space.
+        """
+        current_y = sum(shelf['height'] for shelf in self.shelves)
+        if current_y + rectangle.height > self._length:
+            return False  # Not enough vertical space.
+        new_shelf = {
+            'start_y': current_y,
+            'height': rectangle.height,  # Fixed shelf height.
+            'gaps': [(0, self._length)],  # Initially, the entire width is free.
+            'rectangles': []
+        }
+        self.shelves.append(new_shelf)
+        # Immediately place the rectangle at x = 0 in the new shelf.
+        return self._place_in_shelf(new_shelf, rectangle, gap_index=0, gap_start=0, gap_width=self._length)
+
+    def _place_in_shelf(self, shelf: dict, rectangle: Rectangle, gap_index: int, gap_start: int, gap_width: int) -> bool:
+        """
+        Places the rectangle in the specified shelf gap.
+        Updates the gap list by removing the used portion.
+        """
+        # For safety, ensure the rectangle fits in the gap and does not exceed shelf height.
+        if rectangle.width > gap_width or rectangle.height > shelf['height']:
+            return False
+        # Set the rectangle's position.
+        rectangle.x = gap_start
+        rectangle.y = shelf['start_y']
+        shelf['rectangles'].append(rectangle)
+        self.used_area += rectangle.width * rectangle.height
+
+        # Update the gap: remove the used portion.
+        remaining = gap_width - rectangle.width
+        if remaining > 0:
+            shelf['gaps'][gap_index] = (gap_start + rectangle.width, remaining)
+        else:
+            shelf['gaps'].pop(gap_index)
+        return True
 
     def place(self, rectangle: Rectangle) -> bool:
         """
-        Attempt to place 'rectangle' on the current shelf if it fits horizontally.
-        Otherwise, create a new shelf if there's enough vertical space.
+        Attempts to place a rectangle by checking each existing shelf for a gap that can
+        accommodate it. The rectangle is only considered for a shelf if its height does not
+        exceed the shelf's fixed height. If no suitable shelf exists, a new shelf is created.
+        Returns True if placement is successful.
         """
-        # Quick reject if rectangle is too big for the box
+        # Quick rejection if the rectangle is larger than the box dimensions.
         if rectangle.width > self._length or rectangle.height > self._length:
             return False
-        if rectangle.width * rectangle.height > self._space:
-            return False
 
-        # Create the first shelf if none exist
-        if not self.shelves:
-            shelf = {
-                'start_y': 0,
-                'current_x': 0,
-                'height': rectangle.height,
-                'rectangles': []
-            }
-            self.shelves.append(shelf)
-            self.used_height = rectangle.height
-        else:
-            shelf = self.shelves[-1]
-
-        # Try to place on the current shelf
-        if shelf['current_x'] + rectangle.width <= self._length:
-            rectangle.x = shelf['current_x']
-            rectangle.y = shelf['start_y']
-            shelf['rectangles'].append(rectangle)
-            shelf['current_x'] += rectangle.width
-
-            # If the rectangle is taller than the current shelf, update shelf height.
+        best_candidate = None  # Will store (leftover, shelf, gap_index, gap_start, gap_width)
+        # Search through existing shelves.
+        for shelf in self.shelves:
+            # Only consider shelves tall enough.
             if rectangle.height > shelf['height']:
-                old_height = shelf['height']
-                shelf['height'] = rectangle.height
-                self.used_height += (rectangle.height - old_height)
-            self._space -= rectangle.width * rectangle.height
-            return True
-        else:
-            # Need to start a new shelf if there is vertical space left
-            if self.used_height + rectangle.height <= self._length:
-                new_shelf = {
-                    'start_y': self.used_height,
-                    'current_x': 0,
-                    'height': rectangle.height,
-                    'rectangles': []
-                }
-                self.shelves.append(new_shelf)
-                self.used_height += rectangle.height
-
-                rectangle.x = 0
-                rectangle.y = new_shelf['start_y']
-                new_shelf['rectangles'].append(rectangle)
-                new_shelf['current_x'] += rectangle.width
-                self._space -= rectangle.width * rectangle.height
-                return True
-
-        return False
+                continue
+            for i, (gap_start, gap_width) in enumerate(shelf['gaps']):
+                if rectangle.width <= gap_width:
+                    leftover = gap_width - rectangle.width
+                    # Choose the gap with the smallest leftover (i.e. best fit).
+                    if best_candidate is None or leftover < best_candidate[0]:
+                        best_candidate = (leftover, shelf, i, gap_start, gap_width)
+        if best_candidate is not None:
+            _, shelf, gap_index, gap_start, gap_width = best_candidate
+            return self._place_in_shelf(shelf, rectangle, gap_index, gap_start, gap_width)
+        # If no existing shelf can accommodate the rectangle, create a new shelf.
+        return self._create_new_shelf(rectangle)
 
     def get_rectangles(self):
         """
-        Return a flat list of all rectangles in the box.
+        Returns a list of all rectangles placed in all shelves.
         """
         all_rects = []
         for shelf in self.shelves:
             all_rects.extend(shelf['rectangles'])
         return all_rects
 
-    def get_length(self):
+    def get_length(self) -> int:
+        """
+        Returns the side length of the box.
+        """
         return self._length
 
-    def get_space(self):
-        return self._space
-
-    def remove_rectangle(self, rectangle: Rectangle):
+    def get_space(self) -> int:
         """
-        Removing a rectangle is nontrivial in shelf-based packing. For now, a simple
-        removal is implemented that only updates the free area.
+        Returns the remaining free area in the box.
         """
-        for shelf in self.shelves:
-            if rectangle in shelf['rectangles']:
-                shelf['rectangles'].remove(rectangle)
-                self._space += rectangle.width * rectangle.height
-                break
+        total_area = self._length * self._length
+        return total_area - self.used_area

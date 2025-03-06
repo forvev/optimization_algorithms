@@ -7,7 +7,7 @@ class Greedy:
     def __init__(self, problem, strategy):
         self.problem = problem
         self.strategy = strategy
-        self._boxes = [ShelfBox(self.problem.get_box_size())]
+        self._boxes = [Box(self.problem.get_box_size())]
 
     def run(self):
         rectangles = self.problem.get_rectangles()
