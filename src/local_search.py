@@ -159,8 +159,8 @@ class RuleBasedNeighborhood(Neighborhood):
         self._order = []
 
     def start(self, problem):
-        presort = False
-        if presort == True:
+        presort = True
+        if presort:
             greedy_area = Greedy(problem, GreedyArea())
             greedy_area.run()
             solution = greedy_area.get_solution()
@@ -188,11 +188,21 @@ class RuleBasedNeighborhood(Neighborhood):
         length = len(self._order)
         box_size = solution[0].get_length()
         prev_order = self._order
+        #section based permutation with 5 sections
         num_sections = 5
         section_size = length // num_sections
         sections = [prev_order[i * section_size: (i + 1) * section_size] for i in range(num_sections-1)]
         sections.append(prev_order[section_size*(num_sections-1):])
         new_orders = self._permutate(sections)
+        #max 10 random swaps
+        num_swaps = min(10, length - 1)  # Swap at most 10 pairs
+        swap_indices = random.sample(range(length - 1), num_swaps)
+        for i in swap_indices:
+            # Swap two elements
+            new_order = prev_order # Create a copy before modifying
+            new_order[i], new_order[i + 1] = new_order[i + 1], new_order[i]
+            new_orders.append(new_order)
+
         for order in new_orders:
             new_neighbor = [ShelfBox(box_size)]
             for rectangle in order:
@@ -240,6 +250,5 @@ class PartialOverlapNeighborhood(Neighborhood):
     def generate_neighbors(self, solution):
         # Generate neighbors with partial overlaps
         neighbors = []
-
         # Add logic to handle overlaps
         return neighbors
