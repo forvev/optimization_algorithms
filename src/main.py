@@ -179,13 +179,19 @@ class MainWindow(QMainWindow):
             self._min_size_value.text().isdigit() and \
             self._max_size_value.text().isdigit():
 
-            print("Creating new problem instance")
-            self._problem = OptimizationProblem(
-                int(self._box_size_value.text()),
-                int(self._num_of_rect_value.text()),
-                int(self._min_size_value.text()),
-                int(self._max_size_value.text()),
-            )
+            # Retrieve input values
+            box_size = int(self._box_size_value.text())
+            num_rectangles = int(self._num_of_rect_value.text())
+            min_size = int(self._min_size_value.text())
+            max_size = int(self._max_size_value.text())
+
+            # Check if the problem parameters have changed
+            if not hasattr(self, '_prev_params') or self._prev_params != (num_rectangles, min_size, max_size):
+                print("Creating new problem instance")
+                self._problem = OptimizationProblem(box_size, num_rectangles, min_size, max_size)
+                self._prev_params = (num_rectangles, min_size, max_size)  # Store the new parameters
+            else:
+                print("Reusing existing rectangles")
 
         if self._cb_extensive_mode.isChecked():
             self._run_log_file()
