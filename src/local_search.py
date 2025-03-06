@@ -19,8 +19,6 @@ class LocalSearch:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
             best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]
             if self._neighborhood.evaluate(best_neighbor) > self._neighborhood.evaluate(self._boxes):
-                print(self._neighborhood.evaluate(best_neighbor))
-                print("selecting better neighbor")
                 self._boxes = best_neighbor
             else:
                 break
@@ -190,13 +188,11 @@ class RuleBasedNeighborhood(Neighborhood):
         length = len(self._order)
         box_size = solution[0].get_length()
         prev_order = self._order
-        num_sections = 6
+        num_sections = 5
         section_size = length // num_sections
-        print("section size", section_size)
         sections = [prev_order[i * section_size: (i + 1) * section_size] for i in range(num_sections-1)]
         sections.append(prev_order[section_size*(num_sections-1):])
         new_orders = self._permutate(sections)
-        print(len(new_orders))
         for order in new_orders:
             new_neighbor = [ShelfBox(box_size)]
             for rectangle in order:
@@ -233,12 +229,6 @@ class RuleBasedNeighborhood(Neighborhood):
         return [[rect for section in perm for rect in section] for perm in result]
 
 class PartialOverlapNeighborhood(Neighborhood):
-    def generate_neighbors(self, solution):
-        # Generate neighbors with partial overlaps
-        neighbors = []
-        # Add logic to handle overlaps
-        return neighbors
-
     def start(self, problem):
         objects = problem.get_rectangles()
         box_size = problem.get_box_size()
@@ -246,3 +236,10 @@ class PartialOverlapNeighborhood(Neighborhood):
         for object in objects:
             solution[0].place_no_check(object)
         return solution
+
+    def generate_neighbors(self, solution):
+        # Generate neighbors with partial overlaps
+        neighbors = []
+
+        # Add logic to handle overlaps
+        return neighbors
