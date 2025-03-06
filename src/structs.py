@@ -141,6 +141,21 @@ class Box:
         if not (y + rectangle.height >= self._length):
             self._coordinates.discard((x, y + rectangle.height))
 
+    def copy(self):
+        # new_box = Box(self._length, self.grid_size)
+        # new_box._rectangles = self._rectangles.copy()
+        # new_box._coordinates = self._coordinates.copy()
+        # new_box._space = self._space
+        # new_box.grid = self.grid.copy()
+
+        new_box = Box(self._length, self.grid_size)
+        new_box._rectangles = [Rectangle(r.width, r.height, r.x, r.y) for r in self._rectangles]  # Create new instances
+        new_box._coordinates = self._coordinates.copy()  # Set of immutable tuples, so shallow copy is fine
+        new_box._space = self._space
+
+        # Copy grid structure but not reference old lists
+        new_box.grid = {key: value[:] for key, value in self.grid.items()}
+        return new_box
 class Rectangle:
     def __init__(self, width, height, x, y):
         self.width = width
