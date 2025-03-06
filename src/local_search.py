@@ -58,19 +58,40 @@ class GeometryBasedNeighborhood(Neighborhood):
         neighbors = []
         # Generate different types of neighbors
         move_neighbors = self._move_rectangle(solution)
-        # swap_neighbors = self._swap_rectangles(solution)
+        swap_neighbors = self._swap_rectangles(solution)
 
-        all_neighbors = move_neighbors# + swap_neighbors + rotate_neighbors
+        all_neighbors = move_neighbors + swap_neighbors# + rotate_neighbors
         scored_neighbors = [(self._score_solution(neigh), neigh) for neigh in all_neighbors]
         scored_neighbors.sort(reverse=True, key=lambda x: x[0])
 
         # Return the top N best neighbors (adjustable for efficiency)
-        return [neigh for _, neigh in scored_neighbors[:10]]
+        return [neigh for _, neigh in scored_neighbors[:30]]
 
     def _move_rectangle(self, solution):
         # """ Move a rectangle from one box to another if space allows """
         neighbors = []
-        new_solution: list[Box] = deepcopy(solution)
+        # new_solution: list[Box] = [box.copy() for box in solution]
+        new_solution = deepcopy(solution)
+        # for j, targeted_box in enumerate(new_solution):
+        #     for i, source_box in enumerate(new_solution):
+        #         if i == j:
+        #             continue
+        #         for rect_num, rect in enumerate(source_box.get_rectangles()):
+        #             if new_solution[j].place(rect):
+        #                 new_solution[i].remove_rectangle(rect)
+        #             else:
+        #                 continue
+
+        #             if new_solution[i].get_rectangles() == []:
+        #                 new_solution_2 = [box.copy() for box in new_solution]
+        #                 new_solution_2.pop(i)
+        #                 neighbors.append(new_solution_2)
+
+        #                 continue
+        #             # Add the modified solution as a neighbor
+        #             if self._score_solution(new_solution) > self._score_solution(solution):
+        #                 neighbors.append(new_solution)
+        # return neighbors
         for j, targeted_box in enumerate(new_solution):
             remove_index = 0 # To adjust the index after removing a box
             # (e.g, if a box is removed, the index of the next box will be reduced by 1 not by 2)
@@ -96,9 +117,25 @@ class GeometryBasedNeighborhood(Neighborhood):
                     neighbors.append(new_solution)
         return neighbors
 
-    #todo: maybe I should evaluate the score of the solution after each move comparing the current solution?
+    def _swap_rectangles(self, solution):
+        neighbors = []
+        new_solution = [box.copy() for box in solution]
+
+        for i, box in enumerate(new_solution):
+            new_box = Box(box.get_length())
+            for j, rect in enumerate(box.get_rectangles()):
+                new_box.place(rect)
+
+            # todo: we aim to have as little wasted space between the rectangles as possible
+            if self._score_solution([new_box]) > self._score_solution([box]):
+                new_solution[i] = new_box
+                print("swap")
+                neighbors.append(new_solution)
+
+        return neighbors
     # def _swap_rectangles(self, solution):
     #     """ Swap two rectangles between different boxes if it improves the packing efficiency. """
+    #     """Swap two rectangles between different boxes if it improves the packing efficiency."""
     #     neighbors = []
     #     new_solution = deepcopy(solution)
 
@@ -109,11 +146,18 @@ class GeometryBasedNeighborhood(Neighborhood):
     #         for j in range(i + 1, num_boxes):  # Avoid redundant swaps
     #             box1, box2 = new_solution[i], new_solution[j]
 
+    #             # Iterate over all pairs of rectangles, one from each box
     #             for rect1 in box1.get_rectangles():
     #                 for rect2 in box2.get_rectangles():
-    #                     # Swap only if they fit better
-    #                     if box1.can_place(rect2, rect1.x, rect1.y) and box2.can_place(rect1, rect2.x, rect2.y):
-    #                         # Create a new solution variant
+    #                     # Attempt to swap: Try placing rect1 in box2 and rect2 in box1
+    #                     # First, check if both rectangles can fit in the other box at any position.
+    #                     # Instead of checking for a specific place, we check if the box can fit the rectangle.
+    #                     new_box1 = Box(box1._length)  # Make a new box to simulate placement
+    #                     new_box2 = Box(box2._length)  # Same for box2
+
+    #                     # Try placing rect2 in box1 and rect1 in box2
+    #                     if new_box1.place(rect2) and new_box2.place(rect1):
+    #                         # If both placements succeed, swap them and evaluate the solution
     #                         swapped_solution = deepcopy(new_solution)
     #                         swapped_solution[i].remove_rectangle(rect1)
     #                         swapped_solution[j].remove_rectangle(rect2)
@@ -121,7 +165,7 @@ class GeometryBasedNeighborhood(Neighborhood):
     #                         swapped_solution[i].place(rect2)
     #                         swapped_solution[j].place(rect1)
 
-    #                         # Evaluate new solution
+    #                         # Evaluate the new solution: We want to minimize wasted space, number of boxes, etc.
     #                         if self._score_solution(swapped_solution) > self._score_solution(new_solution):
     #                             neighbors.append(swapped_solution)
 
@@ -135,17 +179,18 @@ class GeometryBasedNeighborhood(Neighborhood):
         - Reduce the number of nearly empty boxes
         """
         num_boxes = len(solution)
-        total_wasted_space = sum(box.get_space() for box in solution)
-        score = 1000 - (num_boxes * 50) - total_wasted_space
+        # total_wasted_space = sum(box.get_space() for box in solution)
+        last_box_wasted_space = solution[-1].get_space()
+        score = 1000 - (num_boxes * 1000) - last_box_wasted_space
 
         return score
 
     def evaluate(self, solution):
         num_boxes = len(solution)
-        total_wasted_space = sum(box.get_space() for box in solution)
-
+        # total_wasted_space = sum(box.get_space() for box in solution)
+        last_box_wasted_space = solution[-1].get_space()
         # Objective: Minimize wasted space and the number of boxes
-        return total_wasted_space + (num_boxes * 50)
+        return last_box_wasted_space + (num_boxes * 1000)
 
 
 class RuleBasedNeighborhood(Neighborhood):
