@@ -1,5 +1,5 @@
 import random
-
+from itertools import permutations
 from structs import *
 from greedy import *
 from copy import deepcopy
@@ -161,11 +161,25 @@ class RuleBasedNeighborhood(Neighborhood):
         self._order = []
 
     def start(self, problem):
-        greedy_area = Greedy(problem, GreedyArea())
-        greedy_area.run()
-        solution = greedy_area.get_solution()
-        self._order = sorted(problem.get_rectangles(),
+        presort = False
+        if presort == True:
+            greedy_area = Greedy(problem, GreedyArea())
+            greedy_area.run()
+            solution = greedy_area.get_solution()
+            self._order = sorted(problem.get_rectangles(),
                              key=lambda x: x.width * x.height, reverse=True)
+        else:
+            self._order = problem.get_rectangles()
+            solution = [ShelfBox(problem.get_box_size())]
+            for rectangle in self._order:
+                placed = False
+                for box in solution:
+                    placed = box.place(rectangle)
+                    if placed: break
+                if not placed:
+                    box = ShelfBox(problem.get_box_size())
+                    box.place(rectangle)
+                    solution.append(box)
         return solution
 
     def generate_neighbors(self, solution):
@@ -176,14 +190,16 @@ class RuleBasedNeighborhood(Neighborhood):
         length = len(self._order)
         box_size = solution[0].get_length()
         prev_order = self._order
-        #randomly permutate order of elements
-        for i in range(length-1):
-            shift = random.randint(0, length -1 - i)
-            new_order = prev_order
-            new_order[i], new_order[i + 1] = new_order[i + 1], new_order[i]
-            #each permutation creates a new neighbor
+        num_sections = 6
+        section_size = length // num_sections
+        print("section size", section_size)
+        sections = [prev_order[i * section_size: (i + 1) * section_size] for i in range(num_sections-1)]
+        sections.append(prev_order[section_size*(num_sections-1):])
+        new_orders = self._permutate(sections)
+        print(len(new_orders))
+        for order in new_orders:
             new_neighbor = [ShelfBox(box_size)]
-            for rectangle in new_order:
+            for rectangle in order:
                 placed = False
                 for box in new_neighbor:
                     placed = box.place(rectangle)
@@ -192,16 +208,29 @@ class RuleBasedNeighborhood(Neighborhood):
                     box = ShelfBox(box_size)
                     box.place(rectangle)
                     new_neighbor.append(box)
-                #only save neighbor if it is better
-                score = self.evaluate(new_neighbor)
-                if score < best_score:
-                    best_score = score
-                    best_neighbor = new_neighbor
-                    self._order = new_order
+            #only save neighbor if it is better
+            score = self.evaluate(new_neighbor)
+            if score > best_score:
+                best_score = score
+                best_neighbor = new_neighbor
+                self._order = order
         neighbors.append(best_neighbor)
         return neighbors
 
+    def _permutate(self, sections):
+        def permute(arr, start=0):
+            if start == len(arr) - 1:
+                result.append(deepcopy(arr))  # Store a copy to avoid mutations
+            else:
+                for i in range(start, len(arr)):
+                    arr[start], arr[i] = arr[i], arr[start]  # Swap
+                    permute(arr, start + 1)  # Recursively permute remaining
+                    arr[start], arr[i] = arr[i], arr[start]  # Swap back
 
+        result = []
+        permute(sections)
+        # Flatten the permutations before returning
+        return [[rect for section in perm for rect in section] for perm in result]
 
 class PartialOverlapNeighborhood(Neighborhood):
     def generate_neighbors(self, solution):
