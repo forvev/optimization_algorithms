@@ -1,4 +1,5 @@
 import random
+
 from itertools import permutations
 from structs import *
 from greedy import *
@@ -146,12 +147,7 @@ class GeometryBasedNeighborhood(Neighborhood):
 
     #     return neighbors
 
-    def evaluate(self, solution):
-        num_boxes = len(solution)
-        total_wasted_space = sum(box.get_space() for box in solution)
-        score = 1000 - (num_boxes * 50) - total_wasted_space
 
-        return score
 
 
 class RuleBasedNeighborhood(Neighborhood):
@@ -160,24 +156,23 @@ class RuleBasedNeighborhood(Neighborhood):
 
     def start(self, problem):
         presort = True
+        self._order = problem.get_rectangles()
         if presort:
-            greedy_area = Greedy(problem, GreedyArea())
-            greedy_area.run()
-            solution = greedy_area.get_solution()
-            self._order = sorted(problem.get_rectangles(),
+            #greedy_area = Greedy(problem, GreedyArea())
+            #greedy_area.run()
+            #solution = greedy_area.get_solution()
+            self._order = sorted(self._order,
                              key=lambda x: x.width * x.height, reverse=True)
-        else:
-            self._order = problem.get_rectangles()
-            solution = [ShelfBox(problem.get_box_size())]
-            for rectangle in self._order:
-                placed = False
-                for box in solution:
-                    placed = box.place(rectangle)
-                    if placed: break
-                if not placed:
-                    box = ShelfBox(problem.get_box_size())
-                    box.place(rectangle)
-                    solution.append(box)
+        solution = [ShelfBox(problem.get_box_size())]
+        for rectangle in self._order:
+            placed = False
+            for box in solution:
+                placed = box.place(rectangle)
+                if placed: break
+            if not placed:
+                box = ShelfBox(problem.get_box_size())
+                box.place(rectangle)
+                solution.append(box)
         return solution
 
     def generate_neighbors(self, solution):
@@ -188,8 +183,8 @@ class RuleBasedNeighborhood(Neighborhood):
         length = len(self._order)
         box_size = solution[0].get_length()
         prev_order = self._order
-        #section based permutation with 5 sections
-        num_sections = 5
+        #section based permutation with 4 sections
+        num_sections = 4
         section_size = length // num_sections
         sections = [prev_order[i * section_size: (i + 1) * section_size] for i in range(num_sections-1)]
         sections.append(prev_order[section_size*(num_sections-1):])
@@ -204,8 +199,9 @@ class RuleBasedNeighborhood(Neighborhood):
             new_orders.append(new_order)
 
         for order in new_orders:
+            fresh_order = [deepcopy(rect) for rect in order]
             new_neighbor = [ShelfBox(box_size)]
-            for rectangle in order:
+            for rectangle in fresh_order:
                 placed = False
                 for box in new_neighbor:
                     placed = box.place(rectangle)
