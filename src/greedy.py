@@ -1,5 +1,5 @@
-# from main import OptimizationProblem
 from structs import *
+from shelf_box import *
 import numpy as np
 
 # Greedy Algorithm
@@ -7,7 +7,7 @@ class Greedy:
     def __init__(self, problem, strategy):
         self.problem = problem
         self.strategy = strategy
-        self._boxes = [Box(self.problem.get_box_size())]
+        self._boxes = [ShelfBox(self.problem.get_box_size())]
 
     def run(self):
         rectangles = self.problem.get_rectangles()
@@ -29,6 +29,9 @@ class Greedy:
             box = Box(self.problem.get_box_size())
             box.place(rectangle)
             self._boxes.append(box)
+
+    def get_solution(self):
+        return self._boxes
 
 # Strategy Implementations for Greedy; 1 by area, 2 by perimeter
 class GreedyArea:

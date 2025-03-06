@@ -1,6 +1,37 @@
 from collections import defaultdict
 import numpy as np
 
+class OptimizationProblem:
+    def __init__(
+        self, box_size: int, num_rectangles: int, min_size: int, max_size: int
+    ) -> None:
+        self._box_size = box_size
+        self._num_rectangles = num_rectangles
+        self._min_size = min_size
+        self._max_size = max_size
+        self._rectangles = np.array([])
+        self.generate_instance()
+
+    def generate_instance(self) -> None:
+        rectangles = []
+        for _ in range(self._num_rectangles):
+            width = np.random.randint(self._min_size, self._max_size+1)
+            height = np.random.randint(self._min_size, self._max_size+1)
+            rect = Rectangle(width, height, 0, 0)
+
+            rectangles.append(rect)
+
+        self._rectangles = np.array(rectangles)
+
+    def get_rectangles(self):
+        return self._rectangles
+
+    def get_box_size(self) -> int:
+        return self._box_size
+
+    def apply_algorithm(self, algorithm):
+        raise NotImplementedError()
+
 class Box:
     def __init__(self, box_size, grid_size=2):
         self._length = box_size
@@ -67,14 +98,6 @@ class Box:
             if self.can_place(rectangle, x, y):
                 self._update_placement(rectangle, coordinate)
                 return True
-            else: #rotation if can't place
-                rectangle_rotate = Rectangle(rectangle.width, rectangle.height, rectangle.x, rectangle.y)
-                rectangle_rotate.rotate()
-                rectangle_rotate.rotate()
-                if self.can_place(rectangle_rotate, x, y):
-                    rectangle.rotate()
-                    self._update_placement(rectangle, coordinate)
-                    return True
         return False
 
     def _update_placement(self, rectangle, coordinate):
