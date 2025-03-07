@@ -21,6 +21,7 @@ class LocalSearch:
             best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]
             if self._neighborhood._score_solution(best_neighbor) > self._neighborhood._score_solution(self._boxes):
                 self._boxes = best_neighbor
+                print ("new best neighbor")
             else:
                 break
         return self._boxes
@@ -278,31 +279,174 @@ class RuleBasedNeighborhood(Neighborhood):
         return neighbors
 
     def _permutate(self, sections):
-        def permute(arr, start=0):
-            if start == len(arr) - 1:
-                result.append(deepcopy(arr))  # Store a copy to avoid mutations
-            else:
-                for i in range(start, len(arr)):
-                    arr[start], arr[i] = arr[i], arr[start]  # Swap
-                    permute(arr, start + 1)  # Recursively permute remaining
-                    arr[start], arr[i] = arr[i], arr[start]  # Swap back
-
         result = []
-        permute(sections)
+        for i in range(len(sections)):
+            for j in range(len(sections)):
+                new_neighbor = sections[:]
+                new_neighbor[i], new_neighbor [j] = new_neighbor[j], new_neighbor[i]
+                result.append(new_neighbor)
+
         # Flatten the permutations before returning
         return [[rect for section in perm for rect in section] for perm in result]
 
 class PartialOverlapNeighborhood(Neighborhood):
+    """
+    A neighborhood that initially allows partial overlaps up to 100%
+    (i.e., the entire rectangle can overlap), but gradually tightens
+    the overlap threshold down to 0%. Any overlap beyond the current
+    threshold is heavily penalized in the scoring function, thus
+    guiding the local search to eventually eliminate overlaps.
+    """
+
+    def __init__(self, max_iterations=10):
+        """
+        :param max_iterations: how many improvement iterations we allow
+               before the overlap tolerance is forced to 0.
+        """
+        super().__init__()
+        self.iteration = 0
+        self.max_iterations = max_iterations
+        # Start at 100% overlap allowed and end at 0%.
+        self.current_tolerance = 1.0
+
     def start(self, problem):
+        """
+        Put all rectangles in a single box without checking overlaps.
+        This creates the initial 'fully-overlapped' solution, which
+        is easy (scoring) at 100% tolerance but will get harder as
+        we reduce the tolerance.
+        """
         objects = problem.get_rectangles()
         box_size = problem.get_box_size()
         solution = [Box(box_size)]
-        for object in objects:
-            solution[0].place_no_check(object)
+        for obj in objects:
+            solution[0].place_no_check(obj)
+        self.iteration = 0
+        self.current_tolerance = 1.0  # 100% overlap allowed at the start
+        print("start finished")
         return solution
 
     def generate_neighbors(self, solution):
-        # Generate neighbors with partial overlaps
+        """
+        Generate neighbors by attempting random "moves" of rectangles
+        between boxes or within the same box. Each neighbor is evaluated
+        with the scoring function that includes an overlap penalty.
+        Overlap tolerance is gradually reduced each iteration.
+        """
         neighbors = []
-        # Add logic to handle overlaps
-        return neighbors
+
+        # We reduce the allowable overlap linearly over the iterations.
+        # Once iteration >= max_iterations, tolerance is 0 => must be overlap-free.
+        if self.iteration < self.max_iterations:
+            step = 1.0 / self.max_iterations
+            self.current_tolerance = max(0.0, 1.0 - self.iteration * step)
+        else:
+            self.current_tolerance = 0.0
+        print("check 1")
+        # Produce a handful of neighbors by randomly moving rectangles.
+        # (You can refine or optimize how many neighbors you generate.)
+        num_moves = min(10, len(solution))  # Limit the number of random moves
+
+        # Flatten all boxes' rectangles for easy indexing
+        all_rects = []
+        for b_idx, b in enumerate(solution):
+            for r_idx, r in enumerate(b.get_rectangles()):
+                all_rects.append((b_idx, r_idx, r))
+        print("check 2")
+        if not all_rects:
+            # No rectangles -> no neighbors
+            return neighbors
+        print("check 3")
+        for _ in range(num_moves):
+            new_solution = deepcopy(solution)
+            # pick a random rectangle
+            source_box_idx, _, rect = random.choice(all_rects)
+            source_box = new_solution[source_box_idx]
+            print("check 3.1")
+            # remove that rectangle
+            source_box.remove_rectangle(rect)
+            print("check 3.2")
+            # pick a random target box (could be same or different)
+            target_box_idx = random.randint(0, len(new_solution) - 1)
+            if target_box_idx == source_box_idx and len(new_solution) == 1:
+                # only one box, so let's just skip if it’s the same box
+                continue
+            target_box = new_solution[target_box_idx]
+            print("check 3.3")
+            # Try placing it (no strict overlap check yet)
+            target_box.place_no_check(rect)
+
+            # If source box is now empty, remove it
+            if len(source_box.get_rectangles()) == 0:
+                new_solution.remove(source_box)
+            print("check 3.4")
+
+            # (Optional) also try adding a brand new box with dimension=problem-size
+            #  ~ 50% chance
+            if random.random() < 0.5:
+                box_size = source_box.get_length()
+                fresh_box = Box(box_size)
+                # Maybe move rect there instead?
+                fresh_box.place_no_check(rect)
+                target_box.remove_rectangle(rect)
+                new_solution.append(fresh_box)
+            print("check 3.5")
+            neighbors.append(new_solution)
+        print("check 4")
+        # Sort neighbors by the new scoring function (including overlap penalty)
+        scored_neighbors = [(self._score_solution(n), n) for n in neighbors]
+        scored_neighbors.sort(reverse=True, key=lambda x: x[0])
+
+        # Increment iteration so next time we tighten tolerance further
+        self.iteration += 1
+        print("check 5")
+        # Return top N best neighbors
+        return [sol for (_, sol) in scored_neighbors[:30]]
+
+    def _score_solution(self, solution):
+        """
+        Inherits the base scoring (min utilization, etc.) and adds
+        a heavy penalty if a pair of rectangles exceeds the current
+        overlap tolerance. Overlap ratio = (area_intersect) / (max_area_of_two).
+
+        If ratio <= current_tolerance, we do not penalize it.
+        If ratio >  current_tolerance, penalize heavily so that
+        the solution is forced to reduce these overlaps as tolerance shrinks.
+        """
+        base_score = super()._score_solution(solution)
+
+        # big constant factor to heavily penalize large overlaps
+        overlap_penalty_factor = 10000
+
+        total_penalty = 0.0
+        for box in solution:
+            rects = box.get_rectangles()
+            for i in range(len(rects)):
+                for j in range(i + 1, len(rects)):
+                    r1 = rects[i]
+                    r2 = rects[j]
+                    overlap_area = self._calc_overlap_area(r1, r2)
+                    if overlap_area == 0:
+                        continue
+                    bigger_rect_area = max(r1.width * r1.height, r2.width * r2.height)
+                    overlap_ratio = overlap_area / float(bigger_rect_area)
+
+                    # If this ratio is beyond current_tolerance => penalize
+                    if overlap_ratio > self.current_tolerance:
+                        violation = overlap_ratio - self.current_tolerance
+                        total_penalty += violation * overlap_penalty_factor
+
+        return base_score - total_penalty
+
+    def _calc_overlap_area(self, r1, r2):
+        """
+        Returns the overlap area between rectangles r1 and r2.
+        If they do not overlap, returns 0.
+        """
+        overlap_width = max(
+            0, min(r1.x + r1.width, r2.x + r2.width) - max(r1.x, r2.x)
+        )
+        overlap_height = max(
+            0, min(r1.y + r1.height, r2.y + r2.height) - max(r1.y, r2.y)
+        )
+        return overlap_width * overlap_height
