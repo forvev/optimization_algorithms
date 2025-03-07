@@ -92,8 +92,7 @@ class GeometryBasedNeighborhood(Neighborhood):
     def _move_rectangle(self, solution):
         # """ Move a rectangle from one box to another if space allows """
         neighbors = []
-        # new_solution: list[Box] = [box.copy() for box in solution]
-        new_solution = deepcopy(solution)
+        new_solution: list[Box] = [box.copy() for box in solution]
         # for j, targeted_box in enumerate(new_solution):
         #     for i, source_box in enumerate(new_solution):
         #         if i == j:
@@ -148,7 +147,7 @@ class GeometryBasedNeighborhood(Neighborhood):
             for j, rect in enumerate(box.get_rectangles()):
                 new_box.place(rect)
 
-            # todo: we aim to have as little wasted space between the rectangles as possible
+            # todo: we have one box that will be divided into two or four and we aim to minimize the number of rectangels in the last box
             if self._score_solution([new_box]) > self._score_solution([box]):
                 new_solution[i] = new_box
                 print("swap")
