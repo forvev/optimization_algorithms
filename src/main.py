@@ -33,6 +33,7 @@ class AlgorithmThread(QThread):
         self._algorithm.run()
         self.finished_signal.emit()  # Signal completion
 
+
 class ApplyWindow(QWidget):
     def __init__(self, problem: OptimizationProblem, strategy):
         super().__init__()
@@ -50,8 +51,11 @@ class ApplyWindow(QWidget):
 
         if isinstance(strategy, GreedyArea) or isinstance(strategy, GreedyPerimeter):
             self._algorithm = Greedy(problem, strategy)
-        elif isinstance(strategy, GeometryBasedNeighborhood) or isinstance(
-            strategy, RuleBasedNeighborhood) or isinstance(strategy, PartialOverlapNeighborhood):
+        elif (
+            isinstance(strategy, GeometryBasedNeighborhood)
+            or isinstance(strategy, RuleBasedNeighborhood)
+            or isinstance(strategy, PartialOverlapNeighborhood)
+        ):
             self._algorithm = LocalSearch(problem, strategy)
 
         self._thread = AlgorithmThread(self._algorithm)
@@ -59,7 +63,7 @@ class ApplyWindow(QWidget):
         self._thread.start()
 
         # 10 columns and one row as a initial size
-        self.setFixedSize(self._problem._box_size*10, self._problem._box_size)
+        self.setFixedSize(self._problem._box_size * 10, self._problem._box_size)
 
         # Run algorithm in steps using QTimer
         self._timer = QTimer(self)
@@ -86,9 +90,7 @@ class ApplyWindow(QWidget):
         execution_time = end_time - self._start_time
         print(f"Algorithm execution time: {execution_time:.4f} seconds")
 
-        # if algorithm takes less than one second, refresh
-        if execution_time < 1:
-            self.update_ui()
+        self.update_ui()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -115,7 +117,6 @@ class ApplyWindow(QWidget):
                 box_index = row * boxes_per_row + col
                 if box_index >= num_boxes:
                     break  # Skip if we don't have enough boxes for this position
-
                 box = boxes[box_index]
 
                 # Calculate x and y offsets for each box
@@ -168,16 +169,22 @@ class MainWindow(QMainWindow):
     def _open_apply_window(self):
         """Opens the apply window with the selected strategy and problem"""
 
-        if not self._rb_greedy_1.isChecked() and not self._rb_greedy_2.isChecked() and \
-            not self._rb_neighborhood_1.isChecked() and not self._rb_neighborhood_2.isChecked() and \
-            not self._rb_neighborhood_3.isChecked():
+        if (
+            not self._rb_greedy_1.isChecked()
+            and not self._rb_greedy_2.isChecked()
+            and not self._rb_neighborhood_1.isChecked()
+            and not self._rb_neighborhood_2.isChecked()
+            and not self._rb_neighborhood_3.isChecked()
+        ):
             print("Please select a strategy")
             return
 
-        if self._box_size_value.text().isdigit() and \
-            self._num_of_rect_value.text().isdigit() and \
-            self._min_size_value.text().isdigit() and \
-            self._max_size_value.text().isdigit():
+        if (
+            self._box_size_value.text().isdigit()
+            and self._num_of_rect_value.text().isdigit()
+            and self._min_size_value.text().isdigit()
+            and self._max_size_value.text().isdigit()
+        ):
 
             # Retrieve input values
             box_size = int(self._box_size_value.text())
@@ -186,10 +193,20 @@ class MainWindow(QMainWindow):
             max_size = int(self._max_size_value.text())
 
             # Check if the problem parameters have changed
-            if not hasattr(self, '_prev_params') or self._prev_params != (num_rectangles, min_size, max_size):
+            if not hasattr(self, "_prev_params") or self._prev_params != (
+                num_rectangles,
+                min_size,
+                max_size,
+            ):
                 print("Creating new problem instance")
-                self._problem = OptimizationProblem(box_size, num_rectangles, min_size, max_size)
-                self._prev_params = (num_rectangles, min_size, max_size)  # Store the new parameters
+                self._problem = OptimizationProblem(
+                    box_size, num_rectangles, min_size, max_size
+                )
+                self._prev_params = (
+                    num_rectangles,
+                    min_size,
+                    max_size,
+                )  # Store the new parameters
             else:
                 print("Reusing existing rectangles")
 
@@ -211,16 +228,21 @@ class MainWindow(QMainWindow):
             "box_size": self._problem._box_size,
             "min random value": self._problem._min_size,
             "max random value": self._problem._max_size,
-            "algorithms": []
+            "algorithms": [],
         }
 
         # Run the selected strategy and algorithm
         if self._strategy:
             algorithm = None
-            if isinstance(self._strategy, GreedyArea) or isinstance(self._strategy, GreedyPerimeter):
+            if isinstance(self._strategy, GreedyArea) or isinstance(
+                self._strategy, GreedyPerimeter
+            ):
                 algorithm = Greedy(self._problem, self._strategy)
-            elif isinstance(self._strategy, GeometryBasedNeighborhood) or isinstance(
-                self._strategy, RuleBasedNeighborhood) or isinstance(self._strategy, PartialOverlapNeighborhood):
+            elif (
+                isinstance(self._strategy, GeometryBasedNeighborhood)
+                or isinstance(self._strategy, RuleBasedNeighborhood)
+                or isinstance(self._strategy, PartialOverlapNeighborhood)
+            ):
                 algorithm = LocalSearch(self._problem, self._strategy)
 
             algorithm.run()
@@ -231,9 +253,15 @@ class MainWindow(QMainWindow):
                 "num_rectangles": self._problem._num_rectangles,
                 "num_boxes_generated": len(algorithm._boxes),
                 "time": time.time() - start_time,
-                "utilization": [box.get_space() for box in algorithm._boxes],  # Space utilization per box
+                "utilization": [
+                    box.get_space() for box in algorithm._boxes
+                ],  # Space utilization per box
                 "strategy": self._strategy.__class__.__name__,
-                "neighborhood": self._strategy.neighborhood.__class__.__name__ if isinstance(self._strategy, LocalSearch) else None
+                "neighborhood": (
+                    self._strategy.neighborhood.__class__.__name__
+                    if isinstance(self._strategy, LocalSearch)
+                    else None
+                ),
             }
 
             algorithm_data["algorithms"].append(algorithm_run_data)

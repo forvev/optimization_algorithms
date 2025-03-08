@@ -1,6 +1,7 @@
 from collections import defaultdict
 import numpy as np
 
+
 class OptimizationProblem:
     def __init__(
         self, box_size: int, num_rectangles: int, min_size: int, max_size: int
@@ -15,8 +16,8 @@ class OptimizationProblem:
     def generate_instance(self) -> None:
         rectangles = []
         for _ in range(self._num_rectangles):
-            width = np.random.randint(self._min_size, self._max_size+1)
-            height = np.random.randint(self._min_size, self._max_size+1)
+            width = np.random.randint(self._min_size, self._max_size + 1)
+            height = np.random.randint(self._min_size, self._max_size + 1)
             rect = Rectangle(width, height, 0, 0)
 
             rectangles.append(rect)
@@ -32,12 +33,13 @@ class OptimizationProblem:
     def apply_algorithm(self, algorithm):
         raise NotImplementedError()
 
+
 class Box:
     def __init__(self, box_size, grid_size=2):
         self._length = box_size
         self._rectangles = []
         self._coordinates = set()
-        self._coordinates.add((0,0))
+        self._coordinates.add((0, 0))
         self._space = box_size * box_size
 
         # Grid for spatial partitioning
@@ -48,7 +50,11 @@ class Box:
         """Get grid cells occupied by a given rectangle."""
         start_x, start_y = x // self.grid_size, y // self.grid_size
         end_x, end_y = (x + width) // self.grid_size, (y + height) // self.grid_size
-        return [(gx, gy) for gx in range(start_x, end_x + 1) for gy in range(start_y, end_y + 1)]
+        return [
+            (gx, gy)
+            for gx in range(start_x, end_x + 1)
+            for gy in range(start_y, end_y + 1)
+        ]
 
     def compute_overlap(self, rectangle: "Rectangle", x, y) -> int:
         """Compute overlap using spatial hashing."""
@@ -60,8 +66,16 @@ class Box:
                 if placed in checked_rectangles:
                     continue
                 checked_rectangles.add(placed)
-                overlap_width = max(0, min(placed.x + placed.width, x + rectangle.width) - max(placed.x, x))
-                overlap_height = max(0, min(placed.y + placed.height, y + rectangle.height) - max(placed.y, y))
+                overlap_width = max(
+                    0,
+                    min(placed.x + placed.width, x + rectangle.width)
+                    - max(placed.x, x),
+                )
+                overlap_height = max(
+                    0,
+                    min(placed.y + placed.height, y + rectangle.height)
+                    - max(placed.y, y),
+                )
                 if overlap_width > 0 and overlap_height > 0:
                     total_overlap += overlap_width * overlap_height
         return total_overlap
@@ -112,7 +126,7 @@ class Box:
             self.grid[cell].append(rectangle)
 
         self._coordinates.discard(coordinate)
-        if not (x+rectangle.width >= self._length):
+        if not (x + rectangle.width >= self._length):
             self._coordinates.add((x + rectangle.width, y))
         if not (y + rectangle.height >= self._length):
             self._coordinates.add((x, y + rectangle.height))
@@ -142,20 +156,22 @@ class Box:
             self._coordinates.discard((x, y + rectangle.height))
 
     def copy(self):
-        # new_box = Box(self._length, self.grid_size)
-        # new_box._rectangles = self._rectangles.copy()
-        # new_box._coordinates = self._coordinates.copy()
-        # new_box._space = self._space
-        # new_box.grid = self.grid.copy()
-
         new_box = Box(self._length, self.grid_size)
-        new_box._rectangles = [Rectangle(r.width, r.height, r.x, r.y) for r in self._rectangles]  # Create new instances
-        new_box._coordinates = self._coordinates.copy()  # Set of immutable tuples, so shallow copy is fine
+        new_box._rectangles = [
+            Rectangle(r.width, r.height, r.x, r.y) for r in self._rectangles
+        ]  # Create new instances
+        new_box._coordinates = (
+            self._coordinates.copy()
+        )  # Set of immutable tuples, so shallow copy is fine
         new_box._space = self._space
 
-        # Copy grid structure but not reference old lists
-        new_box.grid = {key: value[:] for key, value in self.grid.items()}
+        new_box.grid = defaultdict(list)
+        for key, value in self.grid.items():
+            new_box.grid[key] = value.copy()
+
         return new_box
+
+
 class Rectangle:
     def __init__(self, width, height, x, y):
         self.width = width
@@ -169,4 +185,8 @@ class Rectangle:
 
     def generate_random_color(self):
         """Generate a random RGB color as a tuple."""
-        return np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256)
+        return (
+            np.random.randint(0, 256),
+            np.random.randint(0, 256),
+            np.random.randint(0, 256),
+        )
