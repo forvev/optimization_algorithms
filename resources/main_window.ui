@@ -19,7 +19,7 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>401</width>
+      <width>442</width>
       <height>371</height>
      </rect>
     </property>
@@ -29,56 +29,56 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
-          <widget class="QPushButton" name="pb_box_length">
+          <widget class="QLabel" name="label">
            <property name="text">
-            <string>box length</string>
+            <string>Box length</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="box_size_value"/>
          </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
-          <widget class="QPushButton" name="pushButton_9">
+          <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>num of rect</string>
+            <string>Number of rectangles</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_4"/>
+          <widget class="QLineEdit" name="num_of_rect_value"/>
          </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
-          <widget class="QPushButton" name="pushButton_8">
+          <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>max side len</string>
+            <string>Minimum side length</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_3"/>
+          <widget class="QLineEdit" name="min_size_value"/>
          </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="QPushButton" name="pushButton_7">
+          <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>min side len</string>
+            <string>Maximum side length</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_2"/>
+          <widget class="QLineEdit" name="max_size_value"/>
          </item>
         </layout>
        </item>
@@ -99,21 +99,21 @@
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_3">
+          <widget class="QRadioButton" name="rb_neighborhood_1">
            <property name="text">
             <string>Local search 1</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_4">
+          <widget class="QRadioButton" name="rb_neighborhood_2">
            <property name="text">
             <string>Local search 2</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_5">
+          <widget class="QRadioButton" name="rb_neighborhood_3">
            <property name="text">
             <string>Local search 3</string>
            </property>
@@ -124,14 +124,14 @@
       </layout>
      </item>
      <item>
+      <widget class="QCheckBox" name="cb_extensive_mode">
+       <property name="text">
+        <string>The extensive mode with logging to a file</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_6">
-       <item>
-        <widget class="QPushButton" name="pushButton_11">
-         <property name="text">
-          <string>Back</string>
-         </property>
-        </widget>
-       </item>
        <item>
         <widget class="QPushButton" name="pb_apply">
          <property name="text">
