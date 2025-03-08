@@ -74,6 +74,7 @@ class GeometryBasedNeighborhood(Neighborhood):
         box_size = problem.get_box_size()
         solution = []
         for object in objects:
+            # box = ShelfBox(box_size) # much faster
             box = Box(box_size)
             box.place(object)
             solution.append(box)
@@ -101,6 +102,7 @@ class GeometryBasedNeighborhood(Neighborhood):
         Generate neighbors by moving rectangles between boxes.
         """
         neighbors = []
+        # new_solution: list[ShelfBox] = [box.copy() for box in solution] much faster
         new_solution: list[Box] = [box.copy() for box in solution]
         for j, targeted_box in enumerate(new_solution):
             remove_index = 0  # To adjust the index after removing a box
