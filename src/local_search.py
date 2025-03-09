@@ -19,6 +19,7 @@ class LocalSearch:
         while True:
             neighbors = self._neighborhood.generate_neighbors(self._boxes)
             best_neighbor = self._boxes if len(neighbors) ==0 else neighbors[0]
+            print(self._neighborhood._score_solution(best_neighbor), self._neighborhood._score_solution(self._boxes))
             if self._neighborhood._score_solution(best_neighbor) > self._neighborhood._score_solution(self._boxes):
                 self._boxes = best_neighbor
                 print ("new best neighbor")
@@ -321,9 +322,9 @@ class PartialOverlapNeighborhood(Neighborhood):
         solution = [Box(box_size)]
         for obj in objects:
             solution[0].place_no_check(obj)
+        solution[0]._coordinates.add((problem._max_size, problem._max_size))
         self.iteration = 0
         self.current_tolerance = 1.0  # 100% overlap allowed at the start
-        print("start finished")
         return solution
 
     def generate_neighbors(self, solution):
@@ -334,72 +335,60 @@ class PartialOverlapNeighborhood(Neighborhood):
         Overlap tolerance is gradually reduced each iteration.
         """
         neighbors = []
-
+        self.iteration += 1
+        print("iteration", self.iteration)
         # We reduce the allowable overlap linearly over the iterations.
         # Once iteration >= max_iterations, tolerance is 0 => must be overlap-free.
         if self.iteration < self.max_iterations:
             step = 1.0 / self.max_iterations
             self.current_tolerance = max(0.0, 1.0 - self.iteration * step)
+            print(self.current_tolerance)
         else:
             self.current_tolerance = 0.0
-        print("check 1")
         # Produce a handful of neighbors by randomly moving rectangles.
         # (You can refine or optimize how many neighbors you generate.)
-        num_moves = min(10, len(solution))  # Limit the number of random moves
 
         # Flatten all boxes' rectangles for easy indexing
         all_rects = []
         for b_idx, b in enumerate(solution):
             for r_idx, r in enumerate(b.get_rectangles()):
                 all_rects.append((b_idx, r_idx, r))
-        print("check 2")
         if not all_rects:
             # No rectangles -> no neighbors
             return neighbors
-        print("check 3")
+        num_moves = min(100, len(all_rects))
         for _ in range(num_moves):
             new_solution = deepcopy(solution)
-            # pick a random rectangle
-            source_box_idx, _, rect = random.choice(all_rects)
+            source_box_idx, _, _ = random.choice(all_rects)
             source_box = new_solution[source_box_idx]
-            print("check 3.1")
-            # remove that rectangle
-            source_box.remove_rectangle(rect)
-            print("check 3.2")
-            # pick a random target box (could be same or different)
-            target_box_idx = random.randint(0, len(new_solution) - 1)
-            if target_box_idx == source_box_idx and len(new_solution) == 1:
-                # only one box, so let's just skip if it’s the same box
-                continue
-            target_box = new_solution[target_box_idx]
-            print("check 3.3")
-            # Try placing it (no strict overlap check yet)
-            target_box.place_no_check(rect)
+            while len(source_box.get_rectangles()) <2 :
+                source_box_idx, _, _ = random.choice(all_rects)
+                source_box = new_solution[source_box_idx]
+            num_rects_moved = min(len(source_box.get_rectangles()), len(all_rects)//2)
+            for _ in range(num_rects_moved):
+                # pick a random rectangle
+                rect = random.choice(source_box.get_rectangles())
+                # remove that rectangle
+                source_box.remove_rectangle(rect)
+                # pick a random target box (could be same or different)
+                new_solution.append(Box(solution[0].get_length()))
+                placed = False
+                while not placed:
+                    target_box_idx = random.randint(0, len(new_solution) - 1)
+                    target_box = new_solution[target_box_idx]
+                    placed = target_box.place(rect, False)
 
-            # If source box is now empty, remove it
-            if len(source_box.get_rectangles()) == 0:
-                new_solution.remove(source_box)
-            print("check 3.4")
+                # If source box is now empty, remove it
+                if len(source_box.get_rectangles()) == 0:
+                    new_solution.remove(source_box)
+                if len(new_solution[-1].get_rectangles()) == 0:
+                    new_solution.remove(new_solution[-1])
 
-            # (Optional) also try adding a brand new box with dimension=problem-size
-            #  ~ 50% chance
-            if random.random() < 0.5:
-                box_size = source_box.get_length()
-                fresh_box = Box(box_size)
-                # Maybe move rect there instead?
-                fresh_box.place_no_check(rect)
-                target_box.remove_rectangle(rect)
-                new_solution.append(fresh_box)
-            print("check 3.5")
             neighbors.append(new_solution)
-        print("check 4")
         # Sort neighbors by the new scoring function (including overlap penalty)
         scored_neighbors = [(self._score_solution(n), n) for n in neighbors]
         scored_neighbors.sort(reverse=True, key=lambda x: x[0])
 
-        # Increment iteration so next time we tighten tolerance further
-        self.iteration += 1
-        print("check 5")
         # Return top N best neighbors
         return [sol for (_, sol) in scored_neighbors[:30]]
 
@@ -414,10 +403,13 @@ class PartialOverlapNeighborhood(Neighborhood):
         the solution is forced to reduce these overlaps as tolerance shrinks.
         """
         base_score = super()._score_solution(solution)
+        #box_length = solution[0].get_length()
+        #box_area = box_length * box_length
+        #base_score = (-len(solution)*1000
+        #              +(solution[len(solution)-1].get_space()/box_area))
 
         # big constant factor to heavily penalize large overlaps
-        overlap_penalty_factor = 10000
-
+        overlap_penalty_factor = 1000000
         total_penalty = 0.0
         for box in solution:
             rects = box.get_rectangles()
@@ -435,7 +427,6 @@ class PartialOverlapNeighborhood(Neighborhood):
                     if overlap_ratio > self.current_tolerance:
                         violation = overlap_ratio - self.current_tolerance
                         total_penalty += violation * overlap_penalty_factor
-
         return base_score - total_penalty
 
     def _calc_overlap_area(self, r1, r2):
