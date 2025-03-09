@@ -119,6 +119,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QRadioButton" name="rb_annealing_alg">
+           <property name="text">
+            <string>Annealing algorithm</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>
