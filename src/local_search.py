@@ -24,6 +24,10 @@ class LocalSearch:
                 self._boxes = best_neighbor
                 print ("new best neighbor")
             else:
+                if self._neighborhood == PartialOverlapNeighborhood:
+                    if self._neighborhood.iteration != self._neighborhood.max_iteration:
+                        self._neighborhood.iteration = self._neighborhood.max_iteration
+                        continue
                 break
         return self._boxes
 
@@ -377,7 +381,7 @@ class PartialOverlapNeighborhood(Neighborhood):
                 scored_rects.append((rect_overlap, i))
             sorted_rects = sorted(scored_rects, key=lambda x: x[0], reverse = True)
             scored_boxes.append((box_overlap, b_idx, sorted_rects))
-        sorted_boxes = sorted(scored_boxes, key=lambda x: x[0], reverse = True)
+        sorted_boxes = sorted(scored_boxes, key=lambda x: (x[0], -len(x[2])), reverse = True)
         if self.current_tolerance>0.001:
             num_moves = min(20, len(sorted_boxes))
             for i in range(num_moves):
@@ -386,12 +390,13 @@ class PartialOverlapNeighborhood(Neighborhood):
                 source_box = new_solution[source_box_idx]
                 moved_idx = 0
                 rects = source_box.get_rectangles()
-                while source_box.get_space()<0:
+                num_rects_moved =  len(rects)//self.iteration
+                for _ in range(num_rects_moved):
                     #select the rect with most overlap
                     sorted_rects = sorted_boxes[i][2]
                     rect = rects[sorted_rects[moved_idx][1]]
                     # remove that rectangle
-                    source_box.remove_rectangle(rect)
+                    source_box.remove_rectangle(rect, False)
                     #adjust index
                     for j in range(len(sorted_rects)):
                         if sorted_rects[j][1] > sorted_rects[moved_idx][1]:
@@ -452,6 +457,11 @@ class PartialOverlapNeighborhood(Neighborhood):
                 for box in new_solution:
                     placed = box.place(rect)
                     if placed: break
+                if not placed:
+                    for box in new_solution:
+                        rect.rotate()
+                        placed = box.place(rect)
+                        if placed: break
                 if not placed:
                     box = Box(box_size)
                     box.place(rect)

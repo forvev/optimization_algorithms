@@ -144,7 +144,7 @@ class Box:
     def get_length(self):
         return self._length
 
-    def remove_rectangle(self, rectangle: "Rectangle"):
+    def remove_rectangle(self, rectangle: "Rectangle", grid = True):
         """Remove a rectangle from the box."""
         self._rectangles.remove(rectangle)
         self._space += rectangle.width * rectangle.height
@@ -154,6 +154,13 @@ class Box:
             self._coordinates.discard((x + rectangle.width, y))
         if not (y + rectangle.height >= self._length):
             self._coordinates.discard((x, y + rectangle.height))
+
+        if grid:
+            # Update the spatial grid
+            cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
+            for cell in cells:
+                if rectangle in self.grid[cell]:
+                    self.grid[cell].remove(rectangle)
 
     def copy(self):
         # new_box = Box(self._length, self.grid_size)
