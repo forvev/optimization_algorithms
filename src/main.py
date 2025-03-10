@@ -1,6 +1,6 @@
 from local_search import *
 from greedy import *
-from annealing_algorithm import *
+from algorithms import *
 import numpy as np
 import sys
 import os
@@ -59,7 +59,7 @@ class ApplyWindow(QWidget):
         ):
             self._algorithm = LocalSearch(problem, strategy)
         elif isinstance(strategy, SimulatedAnnealing):
-            self._algorithm = SimulatedAnnealing(problem)
+            self._algorithm = Backtracking(problem)
 
         self._thread = AlgorithmThread(self._algorithm)
         self._thread.finished_signal.connect(self.algorithm_finished)

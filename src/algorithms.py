@@ -83,3 +83,52 @@ class SimulatedAnnealing:
 
     def get_solution(self):
         return self.best_solution if self.best_solution else self._boxes
+
+from structs import *
+from shelf_box import *
+import numpy as np
+
+# Backtracking Algorithm
+class Backtracking:
+    def __init__(self, problem):
+        self.problem = problem
+        self._boxes = [Box(self.problem.get_box_size())]
+        self.best_solution = None
+        self.best_score = float("inf")
+
+    def objective_function(self, boxes):
+        """Evaluate the placement by measuring remaining free space."""
+        return sum(box.get_space() for box in boxes)  # Lower is better
+
+    def backtrack(self, index, boxes):
+        """Recursive backtracking approach to find an optimal placement."""
+        if index == len(self.problem.get_rectangles()):
+            score = self.objective_function(boxes)
+            if score < self.best_score:
+                self.best_solution = [box.copy() for box in boxes]
+                self.best_score = score
+            return
+
+        rectangle = self.problem.get_rectangles()[index]
+        placed = False
+        for box in boxes:
+            if box.place(rectangle):
+                self.backtrack(index + 1, boxes)
+                box.remove_rectangle(rectangle)
+                placed = True
+
+        # If no placement is found, add a new box (but only if necessary)
+        if not placed and len(boxes) < len(self.problem.get_rectangles()):
+            new_box = Box(self.problem.get_box_size())
+            if new_box.place(rectangle):
+                boxes.append(new_box)
+                self.backtrack(index + 1, boxes)
+                boxes.pop()
+
+    def run(self):
+        """Start the backtracking algorithm."""
+        self.backtrack(0, self._boxes)
+        return self.best_solution
+
+    def get_solution(self):
+        return self.best_solution if self.best_solution else self._boxes
