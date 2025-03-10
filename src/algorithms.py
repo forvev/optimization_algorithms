@@ -121,6 +121,8 @@ class Backtracking:
                 return True
         return False
 
+    # todo: State Backtracking (Undo Placement):
+    # Backtracking typically involves "undoing" a move when you reach a dead-end.
     def backtrack(self, index=0):
         """Perform backtracking to place all rectangles."""
         if index == len(self.problem.get_rectangles()):
