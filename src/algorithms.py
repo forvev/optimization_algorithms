@@ -1,11 +1,10 @@
 from structs import *
 from shelf_box import *
 import numpy as np
-import math
-import random
+import sys
 
+sys.setrecursionlimit(1111) # the maximal limit for recursion is 1000
 
-# Simulated Annealing Algorithm
 class SimulatedAnnealing:
     def __init__(self, problem=None, initial_temp=1000, cooling_rate=0.99):
         if problem is None:
@@ -100,7 +99,6 @@ class Backtracking:
             self._boxes = [Box(self.problem.get_box_size())]
             self.placed_rectangles = set()  # To keep track of placed rectangles
             self.visited = set()  # To track visited states
-            self.max_depth = len(self.problem.get_rectangles())  # Depth of recursion based on rectangles
 
     def objective_function(self, boxes):
         """Objective function to evaluate the number of boxes used."""
@@ -126,38 +124,30 @@ class Backtracking:
     def backtrack(self, index=0):
         """Perform backtracking to place all rectangles."""
         if index == len(self.problem.get_rectangles()):
-            # All rectangles placed, check for best solution
-            current_score = self.objective_function(self._boxes)
-            if current_score < self.best_score:
-                self.best_solution = [box.copy() for box in self._boxes]
-                self.best_score = current_score
+            self.best_solution = [box.copy() for box in self._boxes]
             return
 
         # Get the rectangle to place
         rectangle = self.problem.get_rectangles()[index]
-
+        is_placed = False
         # Try to place the rectangle in existing boxes
         for box in self._boxes:
             if self.can_place_rectangle(box, rectangle):
-                # Place the rectangle and try the next one
+                # Place the rectangle and try the next one with recursion
                 box.place(rectangle)
+                is_placed = True
                 self.backtrack(index + 1)
-                # Backtrack by removing the rectangle
-                box.remove_rectangle(rectangle)
+            if is_placed:
+                break
 
+        if not is_placed:
         # If the rectangle can't be placed in any existing box, create a new box
-        new_box = Box(self.problem.get_box_size())
-        new_box.place(rectangle)
-        self._boxes.append(new_box)
-        self.backtrack(index + 1)  # Recurse with the next rectangle
-        self._boxes.remove(new_box)  # Backtrack, undo the addition of a new box
-
+            new_box = Box(self.problem.get_box_size())
+            new_box.place(rectangle)
+            self._boxes.append(new_box)
+            self.backtrack(index + 1)
 
     def run(self):
         """Run the backtracking algorithm to minimize the number of boxes."""
         self.backtrack(0)
-        print("Dfdfd")
         return self.best_solution
-
-    def get_solution(self):
-        return self.best_solution if self.best_solution else self._boxes
