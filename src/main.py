@@ -59,6 +59,8 @@ class ApplyWindow(QWidget):
         ):
             self._algorithm = LocalSearch(problem, strategy)
         elif isinstance(strategy, SimulatedAnnealing):
+            self._algorithm = SimulatedAnnealing(problem)
+        elif isinstance(strategy, Backtracking):
             self._algorithm = Backtracking(problem)
 
         self._thread = AlgorithmThread(self._algorithm)
@@ -169,6 +171,7 @@ class MainWindow(QMainWindow):
         self._rb_neighborhood_2.clicked.connect(self._on_rb_neighborhood_2_clicked)
         self._rb_neighborhood_3.clicked.connect(self._on_rb_neighborhood_3_clicked)
         self._rb_annealing_alg.clicked.connect(self._on_rb_annealing_clicked)
+        self._rb_backtracking_alg.clicked.connect(self._on_rb_backtracking_clicked)
 
     def _open_apply_window(self):
         """Opens the apply window with the selected strategy and problem"""
@@ -180,6 +183,7 @@ class MainWindow(QMainWindow):
             and not self._rb_neighborhood_2.isChecked()
             and not self._rb_neighborhood_3.isChecked()
             and not self._rb_annealing_alg.isChecked()
+            and not self._rb_backtracking_alg.isChecked()
         ):
             print("Please select a strategy")
             return
@@ -251,6 +255,8 @@ class MainWindow(QMainWindow):
                 algorithm = LocalSearch(self._problem, self._strategy)
             elif isinstance(self._strategy, SimulatedAnnealing):
                 algorithm = SimulatedAnnealing(self._problem)
+            elif isinstance(self._strategy, Backtracking):
+                algorithm = Backtracking(self._problem)
 
             algorithm.run()
 
@@ -306,7 +312,11 @@ class MainWindow(QMainWindow):
 
     def _on_rb_annealing_clicked(self) -> None:
         self._strategy = SimulatedAnnealing()
-        pass
+
+    def _on_rb_backtracking_clicked(
+        self,
+    ) -> None:
+        self._strategy = Backtracking()
 
     def init_field(self) -> None:
         """Initializes the fields of the main window (because it helps with the suggestions)"""
@@ -318,6 +328,7 @@ class MainWindow(QMainWindow):
         self._rb_neighborhood_2: QRadioButton = self.rb_neighborhood_2
         self._rb_neighborhood_3: QRadioButton = self.rb_neighborhood_3
         self._rb_annealing_alg: QRadioButton = self.rb_annealing_alg
+        self._rb_backtracking_alg: QRadioButton = self.rb_backtracking_alg
         self._num_of_rect_value: QTextEdit = self.num_of_rect_value
         self._box_size_value: QTextEdit = self.box_size_value
         self._min_size_value: QTextEdit = self.min_size_value

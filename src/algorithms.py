@@ -29,6 +29,7 @@ class SimulatedAnnealing:
             return boxes
 
         new_boxes = [box.copy() for box in boxes]
+        # randomly select some solutions that are feasible
         box = np.random.choice(new_boxes)
         rect = np.random.choice(box.get_rectangles())
         box.remove_rectangle(rect)
@@ -58,6 +59,9 @@ class SimulatedAnnealing:
 
             delta = new_score - current_score
 
+            # if <0 it means that the solution is better. However, to avoid getting stuck in
+            # the local optima, we might still accept the positive delta with some probabilities.
+            # As the temperature lowers, the probability to be accepted decreases
             if delta < 0 or np.random.random() < np.exp(-delta / self.temperature):
                 current_solution, current_score = new_solution, new_score
 
@@ -90,11 +94,14 @@ import numpy as np
 
 # Backtracking Algorithm
 class Backtracking:
-    def __init__(self, problem):
-        self.problem = problem
-        self._boxes = [Box(self.problem.get_box_size())]
-        self.best_solution = None
-        self.best_score = float("inf")
+    def __init__(self, problem=None):
+        if problem == None:
+            pass
+        else:
+            self.problem = problem
+            self._boxes = [Box(self.problem.get_box_size())]
+            self.best_solution = None
+            self.best_score = float("inf")
 
     def objective_function(self, boxes):
         """Evaluate the placement by measuring remaining free space."""
