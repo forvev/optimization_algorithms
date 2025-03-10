@@ -93,10 +93,10 @@ class Box:
         Returns:
             bool: True if the rectangle was placed, False otherwise
         """
-        if rectangle.width * rectangle.height > self._space:
-            return False
         if check:
-            for coordinate in sorted(self._coordinates):
+            if rectangle.width * rectangle.height > self._space:
+                return False
+            for coordinate in sorted(self._coordinates, key = lambda x: x[0]+x[1]):
                 x, y = coordinate
                 if self.can_place(rectangle, x, y):
                     self._update_placement(rectangle, coordinate)

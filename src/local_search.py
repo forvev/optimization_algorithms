@@ -45,7 +45,7 @@ class Neighborhood:
 
         # weights
         w_num_boxes = 1000
-        w_min_util = 150
+        w_min_util = 0
         w_compact = 100
         w_ir_gap = 100
         w_contiguity = 50
@@ -310,7 +310,7 @@ class PartialOverlapNeighborhood(Neighborhood):
         # Start at 100% overlap allowed and end at 0%.
         self.current_tolerance = 1.0
 
-    def start(self, problem):
+    def start(self, problem, better_start = False):
         """
         Put all rectangles in a single box without checking overlaps.
         This creates the initial 'fully-overlapped' solution, which
@@ -320,9 +320,20 @@ class PartialOverlapNeighborhood(Neighborhood):
         objects = problem.get_rectangles()
         box_size = problem.get_box_size()
         solution = [Box(box_size)]
-        for obj in objects:
-            solution[0].place_no_check(obj)
-        solution[0]._coordinates.add((problem._max_size, problem._max_size))
+        if better_start:
+            for obj in objects:
+                placed = False
+                for box in solution:
+                    placed = box.place(obj, False)
+                    if placed: break
+                if not placed:
+                    box = Box(box_size)
+                    box.place(obj, False)
+                    solution.append(box)
+        else:
+            for obj in objects:
+                solution[0].place_no_check(obj)
+            solution[0]._coordinates.add((problem._max_size, problem._max_size))
         self.iteration = 0
         self.current_tolerance = 1.0  # 100% overlap allowed at the start
         return solution
@@ -349,48 +360,107 @@ class PartialOverlapNeighborhood(Neighborhood):
         # (You can refine or optimize how many neighbors you generate.)
 
         # Flatten all boxes' rectangles for easy indexing
-        all_rects = []
+        scored_boxes = []
+        rect_count = 0
         for b_idx, b in enumerate(solution):
-            for r_idx, r in enumerate(b.get_rectangles()):
-                all_rects.append((b_idx, r_idx, r))
-        if not all_rects:
-            # No rectangles -> no neighbors
-            return neighbors
-        num_moves = min(100, len(all_rects))
-        for _ in range(num_moves):
-            new_solution = deepcopy(solution)
-            source_box_idx, _, _ = random.choice(all_rects)
-            source_box = new_solution[source_box_idx]
-            while len(source_box.get_rectangles()) <2 :
-                source_box_idx, _, _ = random.choice(all_rects)
+            rects = b.get_rectangles()
+            scored_rects = []
+            box_overlap = 0
+            for i in range(len(rects)):
+                rect_count += 1
+                rect_overlap = 0
+                for j in range(i + 1, len(rects)):
+                    r1 = rects[i]
+                    r2 = rects[j]
+                    rect_overlap += self._calc_overlap_area(r1, r2)
+                box_overlap += rect_overlap
+                scored_rects.append((rect_overlap, i))
+            sorted_rects = sorted(scored_rects, key=lambda x: x[0], reverse = True)
+            scored_boxes.append((box_overlap, b_idx, sorted_rects))
+        sorted_boxes = sorted(scored_boxes, key=lambda x: x[0], reverse = True)
+        if self.current_tolerance>0.001:
+            num_moves = min(20, len(sorted_boxes))
+            for i in range(num_moves):
+                new_solution = deepcopy(solution)
+                source_box_idx = sorted_boxes[i][1]
                 source_box = new_solution[source_box_idx]
-            num_rects_moved = min(len(source_box.get_rectangles()), len(all_rects)//2)
-            for _ in range(num_rects_moved):
-                # pick a random rectangle
-                rect = random.choice(source_box.get_rectangles())
-                # remove that rectangle
-                source_box.remove_rectangle(rect)
-                # pick a random target box (could be same or different)
-                new_solution.append(Box(solution[0].get_length()))
+                moved_idx = 0
+                rects = source_box.get_rectangles()
+                while source_box.get_space()<0:
+                    #select the rect with most overlap
+                    sorted_rects = sorted_boxes[i][2]
+                    rect = rects[sorted_rects[moved_idx][1]]
+                    # remove that rectangle
+                    source_box.remove_rectangle(rect)
+                    #adjust index
+                    for j in range(len(sorted_rects)):
+                        if sorted_rects[j][1] > sorted_rects[moved_idx][1]:
+                            sorted_rects[j] = (sorted_rects[j][0],sorted_rects[j][1] - 1)
+                    moved_idx += 1
+                    #give option to expand
+                    new_solution.append(Box(solution[0].get_length()))
+                    placed = False
+                    # pick a random target box, if same, get a different one
+                    while not placed:
+                        target_box_idx = random.randint(0, len(new_solution) - 1)
+                        while target_box_idx == source_box_idx:
+                            target_box_idx = random.randint(0, len(new_solution) - 1)
+                        target_box = new_solution[target_box_idx]
+                        placed = target_box.place(rect, False)
+
+                    # If source box is now empty, remove it
+                    if len(source_box.get_rectangles()) == 0:
+                        new_solution.remove(source_box)
+                    if len(new_solution[-1].get_rectangles()) == 0:
+                        new_solution.remove(new_solution[-1])
+
+                neighbors.append(new_solution)
+            # Sort neighbors by the new scoring function (including overlap penalty)
+            scored_neighbors = [(self._score_solution(n), n) for n in neighbors]
+            scored_neighbors.sort(reverse=True, key=lambda x: x[0])
+            return [neigh for _, neigh in scored_neighbors[:num_moves]]
+        else:
+            new_solution = deepcopy(solution)
+            problem_rects = []
+            for sb_data in sorted_boxes:
+                if sb_data[0] == 0:
+                    break
+                source_box_idx = sb_data[1]
+                source_box = new_solution[source_box_idx]
+                rects = source_box.get_rectangles()
+                sorted_rects = sb_data[2]
+                r_data = sorted_rects[0]
+                while r_data[0] != 0:
+                    rectangle = rects[r_data[1]]
+                    problem_rects.append(rectangle)
+                    source_box.remove_rectangle(rectangle)
+                    scored_rects = []
+                    for i in range(len(rects)):
+                        rect_count += 1
+                        rect_overlap = 0
+                        for j in range(i + 1, len(rects)):
+                            r1 = rects[i]
+                            r2 = rects[j]
+                            rect_overlap += self._calc_overlap_area(r1, r2)
+                        #overlap_ratio = rect_overlap/rects[i].height * rects[i].width
+                        scored_rects.append((rect_overlap, i))
+                    sorted_rects = sorted(scored_rects, key=lambda x: x[0], reverse=True)
+                    r_data = sorted_rects[0]
+            for rect in problem_rects:
+                box_size = new_solution[0].get_length()
                 placed = False
-                while not placed:
-                    target_box_idx = random.randint(0, len(new_solution) - 1)
-                    target_box = new_solution[target_box_idx]
-                    placed = target_box.place(rect, False)
-
-                # If source box is now empty, remove it
-                if len(source_box.get_rectangles()) == 0:
-                    new_solution.remove(source_box)
-                if len(new_solution[-1].get_rectangles()) == 0:
-                    new_solution.remove(new_solution[-1])
-
+                for box in new_solution:
+                    placed = box.place(rect)
+                    if placed: break
+                if not placed:
+                    box = Box(box_size)
+                    box.place(rect)
+                    new_solution.append(box)
             neighbors.append(new_solution)
-        # Sort neighbors by the new scoring function (including overlap penalty)
-        scored_neighbors = [(self._score_solution(n), n) for n in neighbors]
-        scored_neighbors.sort(reverse=True, key=lambda x: x[0])
+            return neighbors
 
-        # Return top N best neighbors
-        return [sol for (_, sol) in scored_neighbors[:30]]
+
+
 
     def _score_solution(self, solution):
         """
