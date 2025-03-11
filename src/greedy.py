@@ -7,7 +7,7 @@ class Greedy:
     def __init__(self, problem, strategy):
         self.problem = problem
         self.strategy = strategy
-        self._boxes = [Box(self.problem.get_box_size())]
+        self._boxes = []
 
     def run(self):
         rectangles = self.problem.get_rectangles()
@@ -27,6 +27,16 @@ class Greedy:
         if not placed:
             # boxes.append(Box(self.problem.get_box_size()).place(rectangle))
             box = Box(self.problem.get_box_size())
+            box.place(rectangle)
+            self._boxes.append(box)
+
+    def fast_place_rectangle(self, rectangle):
+        placed = False
+        for box in self._boxes:
+            placed = box.place(rectangle)
+            if placed: break
+        if not placed:
+            box = ShelfBox(self.problem.get_box_size())
             box.place(rectangle)
             self._boxes.append(box)
 

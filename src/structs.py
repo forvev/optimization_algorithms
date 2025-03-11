@@ -1,3 +1,4 @@
+import random
 from collections import defaultdict
 import numpy as np
 
@@ -97,33 +98,45 @@ class Box:
             return False
         return True
 
-    def place(self, rectangle: "Rectangle") -> bool:
+    def place(self, rectangle: "Rectangle", check = True) -> bool:
         """
         Place a rectangle in the box
         Args:
             rectangle (Rectangle): the rectangle to be placed
+            check: check for overlaps or not
         Returns:
             bool: True if the rectangle was placed, False otherwise
         """
-        if rectangle.width * rectangle.height > self._space:
-            return False
-        for coordinate in sorted(self._coordinates):
-            x, y = coordinate
-            if self.can_place(rectangle, x, y):
-                self._update_placement(rectangle, coordinate)
-                return True
+        if check:
+            if rectangle.width * rectangle.height > self._space:
+                return False
+            for coordinate in sorted(self._coordinates, key = lambda x: x[0]+x[1]):
+                x, y = coordinate
+                if self.can_place(rectangle, x, y):
+                    self._update_placement(rectangle, coordinate)
+                    return True
+        else:
+            for _ in range(len(self._coordinates)):
+                coordinate = random.choice(list(self._coordinates))
+                x, y = coordinate
+                if not((x + rectangle.width > self._length) or (y + rectangle.height > self._length)):
+                    self._update_placement(rectangle, coordinate, False)
+                    return True
         return False
 
-    def _update_placement(self, rectangle, coordinate):
+    def _update_placement(self, rectangle, coordinate, grid = True):
         """Update placement and store in grid."""
         x, y = coordinate
+        if (x+rectangle.width > self._length) and (y + rectangle.height > self._length):
+            print("placed over the edge")
         rectangle.x, rectangle.y = x, y
         self._rectangles.append(rectangle)
 
-        # Update grid
-        cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
-        for cell in cells:
-            self.grid[cell].append(rectangle)
+        if grid:
+            # Update grid
+            cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
+            for cell in cells:
+                self.grid[cell].append(rectangle)
 
         self._coordinates.discard(coordinate)
         if not (x + rectangle.width >= self._length):
@@ -134,6 +147,7 @@ class Box:
 
     def place_no_check(self, rectangle):
         self._rectangles.append(rectangle)
+        self._space -= rectangle.width * rectangle.height
 
     def get_rectangles(self):
         return self._rectangles
@@ -144,7 +158,7 @@ class Box:
     def get_length(self):
         return self._length
 
-    def remove_rectangle(self, rectangle: "Rectangle"):
+    def remove_rectangle(self, rectangle: "Rectangle", grid = True):
         """Remove a rectangle from the box."""
         self._rectangles.remove(rectangle)
         self._space += rectangle.width * rectangle.height
@@ -154,6 +168,13 @@ class Box:
             self._coordinates.discard((x + rectangle.width, y))
         if not (y + rectangle.height >= self._length):
             self._coordinates.discard((x, y + rectangle.height))
+
+        if grid:
+            # Update the spatial grid
+            cells = self._get_grid_cells(x, y, rectangle.width, rectangle.height)
+            for cell in cells:
+                if rectangle in self.grid[cell]:
+                    self.grid[cell].remove(rectangle)
 
     def copy(self):
         new_box = Box(self._length, self.grid_size)
@@ -171,6 +192,8 @@ class Box:
 
         return new_box
 
+    def get_coordinates(self):
+        return self._coordinates
 
 class Rectangle:
     def __init__(self, width, height, x, y):
