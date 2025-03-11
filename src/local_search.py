@@ -24,9 +24,11 @@ class LocalSearch:
                 self._boxes = best_neighbor
                 print ("new best neighbor")
             else:
-                if self._neighborhood == PartialOverlapNeighborhood:
-                    if self._neighborhood.iteration != self._neighborhood.max_iteration:
-                        self._neighborhood.iteration = self._neighborhood.max_iteration
+                print(self._neighborhood)
+                if isinstance(self._neighborhood, PartialOverlapNeighborhood):
+                    if self._neighborhood.iteration < self._neighborhood.max_iterations:
+                        print("one more round")
+                        self._neighborhood.iteration = self._neighborhood.max_iterations
                         continue
                 break
         return self._boxes
@@ -324,22 +326,14 @@ class PartialOverlapNeighborhood(Neighborhood):
         objects = problem.get_rectangles()
         box_size = problem.get_box_size()
         solution = [Box(box_size)]
-        if better_start:
-            for obj in objects:
-                placed = False
-                for box in solution:
-                    placed = box.place(obj, False)
-                    if placed: break
-                if not placed:
-                    box = Box(box_size)
-                    box.place(obj, False)
-                    solution.append(box)
-        else:
-            for obj in objects:
-                solution[0].place_no_check(obj)
-            solution[0]._coordinates.add((problem._max_size, problem._max_size))
+
+        for obj in objects:
+            solution[0].place_no_check(obj)
+        solution[0]._coordinates.add((problem._max_size, problem._max_size))
         self.iteration = 0
         self.current_tolerance = 1.0  # 100% overlap allowed at the start
+        if solution[0].get_space() > 0:
+            self.iteration = self.max_iterations
         return solution
 
     def generate_neighbors(self, solution):
@@ -393,6 +387,7 @@ class PartialOverlapNeighborhood(Neighborhood):
                 num_rects_moved =  len(rects)//self.iteration
                 for _ in range(num_rects_moved):
                     #select the rect with most overlap
+                    print("new-rect")
                     sorted_rects = sorted_boxes[i][2]
                     rect = rects[sorted_rects[moved_idx][1]]
                     # remove that rectangle
@@ -403,8 +398,15 @@ class PartialOverlapNeighborhood(Neighborhood):
                             sorted_rects[j] = (sorted_rects[j][0],sorted_rects[j][1] - 1)
                     moved_idx += 1
                     #give option to expand
-                    new_solution.append(Box(solution[0].get_length()))
+                    print(compute_min_utilization(new_solution))
+                    print(rect.height*rect.width)
+                    box_size = solution[0].get_length()
+                    box_area = box_size*box_size
+                    if (compute_min_utilization(new_solution) +
+                            ((rect.height * rect.width) / box_area))>0.8:
+                        new_solution.append(Box(box_size))
                     placed = False
+                    counter = 0
                     # pick a random target box, if same, get a different one
                     while not placed:
                         target_box_idx = random.randint(0, len(new_solution) - 1)
@@ -412,8 +414,14 @@ class PartialOverlapNeighborhood(Neighborhood):
                             target_box_idx = random.randint(0, len(new_solution) - 1)
                         target_box = new_solution[target_box_idx]
                         placed = target_box.place(rect, False)
-
+                        if not placed:
+                            counter += 1
+                        if counter > 100:
+                            rect.x, rect.y = (0,0)
+                            target_box.place_no_check(rect)
+                            placed = True
                     # If source box is now empty, remove it
+
                     if len(source_box.get_rectangles()) == 0:
                         new_solution.remove(source_box)
                     if len(new_solution[-1].get_rectangles()) == 0:
