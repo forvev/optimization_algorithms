@@ -20,7 +20,7 @@
       <x>0</x>
       <y>0</y>
       <width>442</width>
-      <height>371</height>
+      <height>397</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -101,21 +101,35 @@
          <item>
           <widget class="QRadioButton" name="rb_neighborhood_1">
            <property name="text">
-            <string>Local search 1</string>
+            <string>Local search 1 (Geometry based)</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QRadioButton" name="rb_neighborhood_2">
            <property name="text">
-            <string>Local search 2</string>
+            <string>Local search 2 (Rule based)</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QRadioButton" name="rb_neighborhood_3">
            <property name="text">
-            <string>Local search 3</string>
+            <string>Local search 3 (Partial overlap)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rb_annealing_alg">
+           <property name="text">
+            <string>Annealing algorithm</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rb_backtracking_alg">
+           <property name="text">
+            <string>Backtracking algorithm</string>
            </property>
           </widget>
          </item>

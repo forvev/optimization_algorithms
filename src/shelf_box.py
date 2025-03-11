@@ -102,3 +102,29 @@ class ShelfBox:
         """
         total_area = self._length * self._length
         return total_area - self.used_area
+
+    def remove_rectangle(self, rectangle: Rectangle):
+        """
+        Removes a rectangle from the box.
+        """
+        for shelf in self.shelves:
+            if rectangle in shelf['rectangles']:
+                shelf['rectangles'].remove(rectangle)
+                self.used_area -= rectangle.width * rectangle.height
+                return
+    
+    def copy(self):
+        """
+        Copies the shelf box.
+        """
+        new_box = ShelfBox(self._length)
+        for shelf in self.shelves:
+            new_shelf = {
+                'start_y': shelf['start_y'],
+                'height': shelf['height'],
+                'gaps': shelf['gaps'][:],
+                'rectangles': shelf['rectangles'][:]
+            }
+            new_box.shelves.append(new_shelf)
+        new_box.used_area = self.used_area
+        return new_box
