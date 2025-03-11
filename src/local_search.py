@@ -115,21 +115,23 @@ class GeometryBasedNeighborhood(Neighborhood):
                 real_index = len(new_solution) - 1 - i + remove_index
                 if real_index == j:
                     continue
-                # if real_index is smaller it doesn't make sense to move the rectangles to j because it was already checked
+                # if real_index is smaller it doesn't make sense to move the 
+                # rectangles to j because it was already checked
                 if j >= real_index:
                     break
-                for rect_num, rect in enumerate(source_box.get_rectangles()):
-                    if new_solution[j].place(rect):
-                        new_solution[real_index].remove_rectangle(rect)
-                    else:
-                        continue
-                    # If the source box becomes empty, remove it
-                    if new_solution[real_index].get_rectangles() == []:
-                        new_solution.pop(real_index)
-                        remove_index += 1
+                rect = source_box.get_rectangles()[-1]
 
-                    # Add the modified solution as a neighbor
-                    neighbors.append(new_solution)
+                if new_solution[j].place(rect):
+                    new_solution[real_index].remove_rectangle(rect)
+                else:
+                    continue
+                # If the source box becomes empty, remove it
+                if new_solution[real_index].get_rectangles() == []:
+                    new_solution.pop(real_index)
+                    remove_index += 1
+
+                # Add the modified solution as a neighbor
+                neighbors.append(new_solution)
         return neighbors
 
     def _score_solution(self, solution):
