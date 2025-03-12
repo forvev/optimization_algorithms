@@ -142,7 +142,7 @@ class Backtracking:
                 return
             if index == len(self.problem.get_rectangles()):
                 score = self.objective_function(boxes_local)
-                if score < self.best_score:
+                if score <= self.best_score:
                     self.best_score = score
                     self.best_solution = [box.copy() for box in boxes_local]
                 return
@@ -156,8 +156,7 @@ class Backtracking:
                     self.backtrack(index + 1, rectangles, [box.copy() for box in boxes_local])
                     box.remove_rectangle(rectangle)
                     is_placed = True
-                if is_placed:
-                    break
+
 
             if not is_placed:
                 new_box = Box(self.problem.get_box_size())
