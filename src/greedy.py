@@ -18,6 +18,7 @@ class Greedy:
         for rectangle in sorted_rectangles:
             self.place_rectangle(rectangle)
         # return boxes
+        return self._boxes
 
     def place_rectangle(self, rectangle):
         placed = False
