@@ -3,7 +3,6 @@ import random
 from itertools import permutations
 from structs import *
 from greedy import *
-from copy import deepcopy
 from scoring import *
 
 
@@ -23,7 +22,7 @@ class LocalSearch:
             if self._neighborhood._score_solution(best_neighbor) > self._neighborhood._score_solution(self._boxes):
                 self._boxes = best_neighbor
             else:
-                print(self._neighborhood)
+                # print(self._neighborhood)
                 if isinstance(self._neighborhood, PartialOverlapNeighborhood):
                     if self._neighborhood.iteration < self._neighborhood.max_iterations:
                         self._neighborhood.iteration = self._neighborhood.max_iterations
@@ -200,7 +199,7 @@ class RuleBasedNeighborhood(Neighborhood):
             new_orders.append(new_order)
 
         for order in new_orders:
-            fresh_order = [deepcopy(rect) for rect in order]
+            fresh_order = [rect.copy() for rect in order]
             new_neighbor = [ShelfBox(box_size)]
             for rectangle in fresh_order:
                 placed = False
@@ -282,13 +281,13 @@ class PartialOverlapNeighborhood(Neighborhood):
         """
         neighbors = []
         self.iteration += 1
-        print("iteration", self.iteration)
+        # print("iteration", self.iteration)
         # We reduce the allowable overlap linearly over the iterations.
         # Once iteration >= max_iterations, tolerance is 0 => must be overlap-free.
         if self.iteration < self.max_iterations:
             step = 1.0 / self.max_iterations
             self.current_tolerance = max(0.0, 1.0 - self.iteration * step)
-            print(self.current_tolerance)
+            # print(self.current_tolerance)
         else:
             self.current_tolerance = 0.0
         # Produce a handful of neighbors by randomly moving rectangles.
@@ -316,7 +315,7 @@ class PartialOverlapNeighborhood(Neighborhood):
         if self.current_tolerance>0.001:
             num_moves = min(20, len(sorted_boxes))
             for i in range(num_moves):
-                new_solution = deepcopy(solution)
+                new_solution = [box.copy() for box in solution]
                 source_box_idx = sorted_boxes[i][1]
                 source_box = new_solution[source_box_idx]
                 moved_idx = 0
@@ -324,7 +323,7 @@ class PartialOverlapNeighborhood(Neighborhood):
                 num_rects_moved =  len(rects)//self.iteration
                 for _ in range(num_rects_moved):
                     #select the rect with most overlap
-                    print("new-rect")
+                    # print("new-rect")
                     sorted_rects = sorted_boxes[i][2]
                     rect = rects[sorted_rects[moved_idx][1]]
                     # remove that rectangle
@@ -335,8 +334,8 @@ class PartialOverlapNeighborhood(Neighborhood):
                             sorted_rects[j] = (sorted_rects[j][0],sorted_rects[j][1] - 1)
                     moved_idx += 1
                     #give option to expand
-                    print(compute_min_utilization(new_solution))
-                    print(rect.height*rect.width)
+                    # print(compute_min_utilization(new_solution))
+                    # print(rect.height*rect.width)
                     box_size = solution[0].get_length()
                     box_area = box_size*box_size
                     if (compute_min_utilization(new_solution) +
@@ -370,7 +369,7 @@ class PartialOverlapNeighborhood(Neighborhood):
             scored_neighbors.sort(reverse=True, key=lambda x: x[0])
             return [neigh for _, neigh in scored_neighbors[:num_moves]]
         else:
-            new_solution = deepcopy(solution)
+            new_solution = [box.copy() for box in solution]
             problem_rects = []
             for sb_data in sorted_boxes:
                 if sb_data[0] == 0:

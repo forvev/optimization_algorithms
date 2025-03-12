@@ -216,3 +216,9 @@ class Rectangle:
             np.random.randint(0, 256),
             np.random.randint(0, 256),
         )
+
+    def copy(self,):
+        new_rectangle = Rectangle(self.width, self.height, self.x, self.y)
+        new_rectangle.color = self.color
+
+        return new_rectangle
