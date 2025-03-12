@@ -99,49 +99,6 @@ class RuleBasedTSP(Neighborhood):
                 result.append(new_neighbor)
 
         # Flatten the permutations before returning
-        return [[rect for section in perm for rect in section] for perm in result]        # Generate neighbors by modifying the order of rectangles
-        neighbors = []
-        best_score = self._score_solution(solution)
-        best_neighbor = solution
-        length = len(solution)
-        prev_order = solution
-        # section based permutation with 4 sections
-        num_sections = 4
-        section_size = length // num_sections
-        sections = [
-            prev_order[i * section_size: (i + 1) * section_size]
-            for i in range(num_sections - 1)
-        ]
-        sections.append(prev_order[section_size * (num_sections - 1):])
-        new_orders = self._permutate(sections)
-        # max 10 random swaps
-        num_swaps = min(10, length - 1)  # Swap at most 10 pairs
-        swap_indices = random.sample(range(length - 1), num_swaps)
-        for i in swap_indices:
-            # Swap two elements
-            new_order = prev_order  # Create a copy before modifying
-            new_order[i], new_order[i + 1] = new_order[i + 1], new_order[i]
-            new_orders.append(new_order)
-
-        for order in new_orders:
-            # only save neighbor if it is better
-            score = self._score_solution(order)
-            if score > best_score:
-                best_score = score
-                best_neighbor = order
-
-        neighbors.append(best_neighbor)
-        return neighbors
-
-    def _permutate(self, sections):
-        result = []
-        for i in range(len(sections)):
-            for j in range(len(sections)):
-                new_neighbor = sections[:]
-                new_neighbor[i], new_neighbor[j] = new_neighbor[j], new_neighbor[i]
-                result.append(new_neighbor)
-
-        # Flatten the permutations before returning
         return [[rect for section in perm for rect in section] for perm in result]
 
     def _score_solution(self, solution):
