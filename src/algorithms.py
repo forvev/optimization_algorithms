@@ -2,6 +2,7 @@ from structs import *
 from shelf_box import *
 import numpy as np
 import sys
+from copy import deepcopy
 
 sys.setrecursionlimit(1111) # the maximal limit for recursion is 1000
 
@@ -95,14 +96,15 @@ class Backtracking:
         else:
             self.problem = problem
             self.best_solution = None
-            self.best_score = float("inf")
+            self.best_score = 0
             self._boxes = [Box(self.problem.get_box_size())]
             self.placed_rectangles = set()  # To keep track of placed rectangles
             self.visited = set()  # To track visited states
 
     def objective_function(self, boxes):
         """Objective function to evaluate the number of boxes used."""
-        return len(boxes)
+        # return len(boxes)
+        return boxes[-1].get_space()
 
     def can_place_rectangle(self, box, rectangle):
         """Check if a rectangle can be placed in a given box without overlap."""
@@ -121,16 +123,17 @@ class Backtracking:
                 return True
         return False
 
-    # todo: State Backtracking (Undo Placement):
-    # Backtracking typically involves "undoing" a move when you reach a dead-end.
-    def backtrack(self, index=0):
+    def backtrack(self, index=0, rectangles=None):
         """Perform backtracking to place all rectangles."""
         if index == len(self.problem.get_rectangles()):
-            self.best_solution = [box.copy() for box in self._boxes]
+            score = self.objective_function(self._boxes)
+            if score > self.best_score:
+                self.best_score = score
+                self.best_solution = [box.copy() for box in self._boxes]
             return
 
         # Get the rectangle to place
-        rectangle = self.problem.get_rectangles()[index]
+        rectangle = rectangles[index] # self.problem.get_rectangles()[index]
         is_placed = False
         # Try to place the rectangle in existing boxes
         for box in self._boxes:
@@ -138,7 +141,7 @@ class Backtracking:
                 # Place the rectangle and try the next one with recursion
                 box.place(rectangle)
                 is_placed = True
-                self.backtrack(index + 1)
+                self.backtrack(index + 1, rectangles)
             if is_placed:
                 break
 
@@ -147,9 +150,19 @@ class Backtracking:
             new_box = Box(self.problem.get_box_size())
             new_box.place(rectangle)
             self._boxes.append(new_box)
-            self.backtrack(index + 1)
+            self.backtrack(index + 1, rectangles)
 
     def run(self):
         """Run the backtracking algorithm to minimize the number of boxes."""
-        self.backtrack(0)
+
+        # we create the idea of tree and then we choose which branch is the most efficient (best_score)
+        if len(self.problem.get_rectangles()) > 5:
+            iteration = 5
+        else:
+            iteration = len(self.problem.get_rectangles())
+
+        for x in range(0, iteration):
+            rectangles = deepcopy(self.problem.get_rectangles_random())
+            self._boxes = [Box(self.problem.get_box_size())]
+            self.backtrack(0, rectangles)
         return self.best_solution

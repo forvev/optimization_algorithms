@@ -28,6 +28,9 @@ class OptimizationProblem:
     def get_rectangles(self):
         return self._rectangles
 
+    def get_rectangles_random(self):
+        return np.random.permutation(self._rectangles)
+
     def get_box_size(self) -> int:
         return self._box_size
 
