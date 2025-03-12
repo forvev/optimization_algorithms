@@ -39,7 +39,7 @@ class OptimizationProblem:
 
 
 class Box:
-    def __init__(self, box_size, grid_size=2):
+    def __init__(self, box_size, grid_size=2, id=None):
         self._length = box_size
         self._rectangles = []
         self._coordinates = set()
@@ -49,6 +49,11 @@ class Box:
         # Grid for spatial partitioning
         self.grid_size = grid_size
         self.grid = defaultdict(list)  # Dictionary mapping grid cells to rectangles
+
+        if id is None:
+            self.id = np.random.randint(0, 100000)
+        else:
+            self.id = id
 
     def _get_grid_cells(self, x, y, width, height):
         """Get grid cells occupied by a given rectangle."""
@@ -180,9 +185,9 @@ class Box:
                     self.grid[cell].remove(rectangle)
 
     def copy(self):
-        new_box = Box(self._length, self.grid_size)
+        new_box = Box(self._length, self.grid_size, self.id)
         new_box._rectangles = [
-            Rectangle(r.width, r.height, r.x, r.y) for r in self._rectangles
+            Rectangle(r.width, r.height, r.x, r.y, r.color, r.id) for r in self._rectangles
         ]  # Create new instances
         new_box._coordinates = (
             self._coordinates.copy()
@@ -199,12 +204,21 @@ class Box:
         return self._coordinates
 
 class Rectangle:
-    def __init__(self, width, height, x, y):
+    def __init__(self, width, height, x, y, color=None, id=None):
         self.width = width
         self.height = height
         self.x = x
         self.y = y
-        self.color = self.generate_random_color()  # Assign a color when created
+
+        if color is None:
+            self.color = self.generate_random_color()  # Assign a color when created
+        else:
+            self.color = color
+        
+        if id is None:
+            self.id = np.random.randint(0,1000000)
+        else:
+            self.id = id
 
     def rotate(self):
         self.width, self.height = self.height, self.width
