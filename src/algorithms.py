@@ -90,6 +90,7 @@ class SimulatedAnnealing:
     def get_solution(self):
         return self.best_solution if self.best_solution else self._boxes
 
+# this backtracking runs really long because it creates different branches
 # class Backtracking:
 #     def __init__(self, problem=None):
 #         try:
@@ -254,17 +255,8 @@ class Backtracking:
 
     def run(self):
         """Run the backtracking algorithm to minimize the number of boxes."""
-
-        # we create the idea of tree and then we choose which branch is the most efficient (best_score)
-        # if len(self.problem.get_rectangles()) > 5:
-        #     iteration = 2
-        # else:
-        #     iteration = len(self.problem.get_rectangles())
-
-        #for x in range(0, iteration):
         rectangles = self.problem.get_rectangles_random()
         boxes_local = [Box(self.problem.get_box_size())]
-            # if self.best_solution is not None: self._boxes = self.best_solution
         self.backtrack(0, rectangles, boxes_local)
 
         return self.best_solution
