@@ -90,31 +90,118 @@ class SimulatedAnnealing:
     def get_solution(self):
         return self.best_solution if self.best_solution else self._boxes
 
+# class Backtracking:
+#     def __init__(self, problem=None):
+#         try:
+#             self.max_time = 240.0
+#             self.start_time = time.time()
+#             if problem is None:
+#                 pass
+#             else:
+#                 self.problem = problem
+#                 self.best_solution = None
+#                 self.best_score = len(problem.get_rectangles())
+#                 self._boxes = [Box(self.problem.get_box_size())]
+#                 self.placed_rectangles = set()  # To keep track of placed rectangles
+#                 self.visited = set()  # To track visited states
+#                 greedy_solver = Greedy(problem,GreedyArea())
+#                 greedy_solution = greedy_solver.run()
+#                 self.upper_bound = len(greedy_solution)
+#         except Exception as e:
+#             print(f"An error occurred: {e}")
+
+#     def objective_function(self, boxes):
+#         """Objective function to evaluate the number of boxes used."""
+#         return len(boxes)
+#         #return boxes[-1].get_space()
+
+#     def can_place_rectangle(self, box, rectangle):
+#         """Check if a rectangle can be placed in a given box without overlap."""
+#         for coordinate in box._coordinates:
+#             x, y = coordinate
+#             if box.can_place(rectangle, x, y):
+#                 return True
+#         return False
+
+#     def place_rectangle(self, box, rectangle):
+#         """Place the rectangle in the box if possible."""
+#         for coordinate in box._coordinates:
+#             x, y = coordinate
+#             if box.can_place(rectangle, x, y):
+#                 box.place(rectangle)
+#                 return True
+#         return False
+
+#     def backtrack(self, index=0, rectangles=None, boxes_local=None):
+#         try:
+#             """Perform backtracking to place all rectangles."""
+#             if len(boxes_local) > self.upper_bound:
+#                 return
+#             if time.time() - self.start_time > self.max_time:
+#                 return
+#             if index == len(self.problem.get_rectangles()):
+#                 score = self.objective_function(boxes_local)
+#                 if score <= self.best_score:
+#                     self.best_score = score
+#                     self.best_solution = [box.copy() for box in boxes_local]
+#                 return
+#             self._boxes = boxes_local
+#             rectangle = rectangles[index]
+#             is_placed = False
+
+#             for box in boxes_local:
+#                 if self.can_place_rectangle(box, rectangle):
+#                     box.place(rectangle)
+#                     self.backtrack(index + 1, rectangles, [box.copy() for box in boxes_local])
+#                     box.remove_rectangle(rectangle)
+#                     is_placed = True
+
+
+#             if not is_placed:
+#                 new_box = Box(self.problem.get_box_size())
+#                 if new_box.place(rectangle):
+#                     new_boxes = [box.copy() for box in boxes_local]
+#                     new_boxes.append(new_box)
+#                     self.backtrack(index + 1, rectangles, new_boxes)
+#                     new_boxes.pop()
+#         except Exception as e:
+#             print(f"An error occurred: {e}")
+
+#     def run(self):
+#         """Run the backtracking algorithm to minimize the number of boxes."""
+
+#         # we create the idea of tree and then we choose which branch is the most efficient (best_score)
+#         # if len(self.problem.get_rectangles()) > 5:
+#         #     iteration = 2
+#         # else:
+#         #     iteration = len(self.problem.get_rectangles())
+#         try:
+#             #for x in range(0, iteration):
+#             rectangles = self.problem.get_rectangles_random()
+#             boxes_local = [Box(self.problem.get_box_size())]
+#                 # if self.best_solution is not None: self._boxes = self.best_solution
+#             self.backtrack(0, rectangles, boxes_local)
+
+#             return self.best_solution
+#         except Exception as e:
+#             print(f"An error occurred: {e}")
 
 class Backtracking:
     def __init__(self, problem=None):
-        try:
-            self.max_time = 240.0
-            self.start_time = time.time()
-            if problem is None:
-                pass
-            else:
-                self.problem = problem
-                self.best_solution = None
-                self.best_score = len(problem.get_rectangles())
-                self._boxes = [Box(self.problem.get_box_size())]
-                self.placed_rectangles = set()  # To keep track of placed rectangles
-                self.visited = set()  # To track visited states
-                greedy_solver = Greedy(problem,GreedyArea())
-                greedy_solution = greedy_solver.run()
-                self.upper_bound = len(greedy_solution)
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        if problem is None:
+            pass
+        else:
+            self.problem = problem
+            self.best_solution = None
+            self.best_score = 0
+            self._boxes = [Box(self.problem.get_box_size())]
+            self.placed_rectangles = set()  # To keep track of placed rectangles
+            self.visited = set()  # To track visited states
 
     def objective_function(self, boxes):
         """Objective function to evaluate the number of boxes used."""
-        return len(boxes)
-        #return boxes[-1].get_space()
+        # return len(boxes)
+        return boxes[-1].get_space()
 
     def can_place_rectangle(self, box, rectangle):
         """Check if a rectangle can be placed in a given box without overlap."""
@@ -134,39 +221,36 @@ class Backtracking:
         return False
 
     def backtrack(self, index=0, rectangles=None, boxes_local=None):
-        try:
-            """Perform backtracking to place all rectangles."""
-            if len(boxes_local) > self.upper_bound:
-                return
-            if time.time() - self.start_time > self.max_time:
-                return
-            if index == len(self.problem.get_rectangles()):
-                score = self.objective_function(boxes_local)
-                if score <= self.best_score:
-                    self.best_score = score
-                    self.best_solution = [box.copy() for box in boxes_local]
-                return
-            self._boxes = boxes_local
-            rectangle = rectangles[index]
-            is_placed = False
+        """Perform backtracking to place all rectangles."""
+        if index == len(self.problem.get_rectangles()):
+            score = self.objective_function(boxes_local)
+            if score >= self.best_score:
+                self.best_score = score
+                self.best_solution = boxes_local # [box.copy() for box in self._boxes]
+                self._boxes = [box.copy() for box in boxes_local]
+            return
 
-            for box in boxes_local:
-                if self.can_place_rectangle(box, rectangle):
-                    box.place(rectangle)
-                    self.backtrack(index + 1, rectangles, [box.copy() for box in boxes_local])
-                    box.remove_rectangle(rectangle)
-                    is_placed = True
+        # Get the rectangle to place
+        rectangle = rectangles[index] # self.problem.get_rectangles()[index]
+        is_placed = False
+        # Try to place the rectangle in existing boxes
+        for box in boxes_local:
+            if self.can_place_rectangle(box, rectangle):
+                # Place the rectangle and try the next one with recursion
+                box.place(rectangle)
+                is_placed = True
+                self.backtrack(index + 1, rectangles, boxes_local)
+            if is_placed:
+                break
 
+        self._boxes = boxes_local # just for displaying
 
-            if not is_placed:
-                new_box = Box(self.problem.get_box_size())
-                if new_box.place(rectangle):
-                    new_boxes = [box.copy() for box in boxes_local]
-                    new_boxes.append(new_box)
-                    self.backtrack(index + 1, rectangles, new_boxes)
-                    new_boxes.pop()
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        if not is_placed:
+        # If the rectangle can't be placed in any existing box, create a new box
+            new_box = Box(self.problem.get_box_size())
+            new_box.place(rectangle)
+            boxes_local.append(new_box)
+            self.backtrack(index + 1, rectangles, boxes_local)
 
     def run(self):
         """Run the backtracking algorithm to minimize the number of boxes."""
@@ -176,13 +260,11 @@ class Backtracking:
         #     iteration = 2
         # else:
         #     iteration = len(self.problem.get_rectangles())
-        try:
-            #for x in range(0, iteration):
-            rectangles = self.problem.get_rectangles_random()
-            boxes_local = [Box(self.problem.get_box_size())]
-                # if self.best_solution is not None: self._boxes = self.best_solution
-            self.backtrack(0, rectangles, boxes_local)
 
-            return self.best_solution
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        #for x in range(0, iteration):
+        rectangles = self.problem.get_rectangles_random()
+        boxes_local = [Box(self.problem.get_box_size())]
+            # if self.best_solution is not None: self._boxes = self.best_solution
+        self.backtrack(0, rectangles, boxes_local)
+
+        return self.best_solution
