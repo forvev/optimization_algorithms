@@ -1,6 +1,5 @@
 from structs import *
 from shelf_box import *
-import numpy as np
 
 # Greedy Algorithm
 class Greedy:
@@ -10,15 +9,17 @@ class Greedy:
         self._boxes = []
 
     def run(self):
-        rectangles = self.problem.get_rectangles()
-        sorted_rectangles = self.strategy.generate_order(rectangles)
-        # boxes = [Box(self.problem.get_box_size())]
+        objects = self.strategy.start(self.problem)
+        sorted_objects = self.strategy.generate_order(objects)
 
         # Apply the strategy to place rectangles
-        for rectangle in sorted_rectangles:
-            self.place_rectangle(rectangle)
-        # return boxes
-        return self._boxes
+        if isinstance(self.strategy, GreedyArea) or isinstance(self.strategy, GreedyPerimeter):
+            for rectangle in sorted_objects:
+                self.place_rectangle(rectangle)
+            # return boxes
+            return self._boxes
+
+        return sorted_objects
 
     def place_rectangle(self, rectangle):
         placed = False
@@ -26,7 +27,6 @@ class Greedy:
             placed = box.place(rectangle)
             if placed: break
         if not placed:
-            # boxes.append(Box(self.problem.get_box_size()).place(rectangle))
             box = Box(self.problem.get_box_size())
             box.place(rectangle)
             self._boxes.append(box)
@@ -46,6 +46,8 @@ class Greedy:
 
 # Strategy Implementations for Greedy; 1 by area, 2 by perimeter
 class GreedyArea:
+    def start(self, problem):
+        return problem.get_rectangles()
     """
     Greedy strategy to sort the rectangles by area. The rectangles are sorted in decreasing order of area.
     """
@@ -53,6 +55,8 @@ class GreedyArea:
         return sorted(solution, key=lambda x: x.width * x.height, reverse=True)
 
 class GreedyPerimeter:
+    def start(self, problem):
+        return problem.get_rectangles()
     """
     Greedy strategy to sort the rectangles by perimeter. The rectangles are sorted in decreasing order of perimeter.
     """

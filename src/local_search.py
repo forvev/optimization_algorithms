@@ -8,10 +8,10 @@ from scoring import *
 
 # Local Search Algorithm
 class LocalSearch:
-    def __init__(self, optimization_problem: OptimizationProblem, neighborhood):
+    def __init__(self, optimization_problem, neighborhood):
         self._problem = optimization_problem
         self._neighborhood = neighborhood
-        self._boxes = [Box(self._problem.get_box_size())]
+        self._boxes = []
 
     def run(self):
         self._boxes = self._neighborhood.start(self._problem)
@@ -22,12 +22,13 @@ class LocalSearch:
             if self._neighborhood._score_solution(best_neighbor) > self._neighborhood._score_solution(self._boxes):
                 self._boxes = best_neighbor
             else:
-                # print(self._neighborhood)
-                if isinstance(self._neighborhood, PartialOverlapNeighborhood):
+                if "PartialOverlapNeighborhood" in str(type(self._neighborhood)):
                     if self._neighborhood.iteration < self._neighborhood.max_iterations:
                         self._neighborhood.iteration = self._neighborhood.max_iterations
-                        continue
-                break
+                    else:
+                        break
+                else:
+                    break
         return self._boxes
 
 
@@ -205,8 +206,7 @@ class RuleBasedNeighborhood(Neighborhood):
                 placed = False
                 for box in new_neighbor:
                     placed = box.place(rectangle)
-                    if placed:
-                        break
+                    if placed: break
                 if not placed:
                     box = ShelfBox(box_size)
                     box.place(rectangle)
@@ -281,13 +281,11 @@ class PartialOverlapNeighborhood(Neighborhood):
         """
         neighbors = []
         self.iteration += 1
-        # print("iteration", self.iteration)
         # We reduce the allowable overlap linearly over the iterations.
         # Once iteration >= max_iterations, tolerance is 0 => must be overlap-free.
         if self.iteration < self.max_iterations:
             step = 1.0 / self.max_iterations
             self.current_tolerance = max(0.0, 1.0 - self.iteration * step)
-            # print(self.current_tolerance)
         else:
             self.current_tolerance = 0.0
         # Produce a handful of neighbors by randomly moving rectangles.
@@ -323,7 +321,6 @@ class PartialOverlapNeighborhood(Neighborhood):
                 num_rects_moved =  len(rects)//self.iteration
                 for _ in range(num_rects_moved):
                     #select the rect with most overlap
-                    # print("new-rect")
                     sorted_rects = sorted_boxes[i][2]
                     rect = rects[sorted_rects[moved_idx][1]]
                     # remove that rectangle
@@ -334,8 +331,6 @@ class PartialOverlapNeighborhood(Neighborhood):
                             sorted_rects[j] = (sorted_rects[j][0],sorted_rects[j][1] - 1)
                     moved_idx += 1
                     #give option to expand
-                    # print(compute_min_utilization(new_solution))
-                    # print(rect.height*rect.width)
                     box_size = solution[0].get_length()
                     box_area = box_size*box_size
                     if (compute_min_utilization(new_solution) +
