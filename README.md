@@ -39,6 +39,17 @@ To run the main application with a GUI:
 python src/main.py
 ```
 
+### Example result
+#### Main widnow
+<p align="center">
+  <img src="resources/gui_example_1.png" alt="alt text" width="50%">
+</p>
+
+#### The apply algorithm winodw
+<p align="center">
+  <img src="resources/gui_example_2.png" alt="alt text">
+</p>
+
 ### Running the Traveling Salesman Problem (TSP) Visualization
 
 To run the TSP visualization demo:
